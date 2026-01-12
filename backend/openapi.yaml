@@ -1,0 +1,127 @@
+openapi: 3.0.0
+info:
+  title: "Adobo API"
+  version: "1.0.0"
+servers:
+  - url: "http://localhost:4000"
+paths:
+  # Auth-related endpoints
+  /user:
+    get:
+      operationId: get-api-v1-user
+      summary: "Return authenticated user"
+      responses:
+        "200":
+          description: "Current user information"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BaseUser"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  # TEMPLATE: Add your custom endpoints below
+  # Example endpoint structure:
+  #
+  # /your-resource:
+  #   get:
+  #     operationId: get-api-v1-your-resource
+  #     summary: "Description of your endpoint"
+  #     parameters:
+  #       - name: id
+  #         in: path
+  #         required: true
+  #         description: "Resource ID"
+  #         schema:
+  #           type: string
+  #     requestBody:
+  #       description: "Request payload description"
+  #       content:
+  #         application/json:
+  #           schema:
+  #             $ref: '#/components/schemas/YourSchema'
+  #     responses:
+  #       "200":
+  #         description: "Success response"
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/YourResponseSchema'
+  #       "401":
+  #         description: "Unauthorized"
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/Error'
+  #       "404":
+  #         description: "Not found"
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/Error'
+components:
+  schemas:
+    # Standard error response
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+
+    # Auth-related schemas
+    BaseUser:
+      description: Base user detail
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        id:
+          type: string
+          format: uuid
+        firstName:
+          type: string
+          nullable: true
+        lastName:
+          type: string
+          nullable: true
+      required:
+        - id
+        - email
+
+    # TEMPLATE: Add your custom schemas below
+    # Example schema structure:
+    #
+    # YourSchema:
+    #   description: Description of your schema
+    #   type: object
+    #   properties:
+    #     id:
+    #       type: string
+    #       format: uuid
+    #     name:
+    #       type: string
+    #     email:
+    #       type: string
+    #       format: email
+    #     createdAt:
+    #       type: string
+    #       format: date-time
+    #     isActive:
+    #       type: boolean
+    #       default: true
+    #     metadata:
+    #       type: object
+    #       nullable: true
+    #     tags:
+    #       type: array
+    #       items:
+    #         type: string
+    #   required:
+    #     - id
+    #     - name
+    #     - email

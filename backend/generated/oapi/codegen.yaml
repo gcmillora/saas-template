@@ -1,0 +1,9 @@
+package: oapi
+generate:
+  chi-server: true
+  models: true
+  client: true
+  strict-server: true
+output: generated/oapi/generated.go
+output-options:
+  skip-prune: true

@@ -1,0 +1,20 @@
+version: "2"
+linters:
+  enable:
+    - errchkjson
+    - gocritic
+    - importas
+  exclusions:
+    warn-unused: true
+    presets:
+      - std-error-handling
+  settings:
+    gocritic:
+      disable-checks:
+        - ifElseChain
+  formatters:
+    enable:
+      - goimports
+      - golines
+    exclusions:
+      warn-unused: true

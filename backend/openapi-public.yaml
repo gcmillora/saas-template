@@ -1,0 +1,68 @@
+openapi: 3.0.0
+info:
+  title: "Go Backend Public API"
+  version: "1.0.0"
+paths:
+  /health:
+    get:
+      operationId: get-api-v1-health
+      summary: "Returns a health check response"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            text/plain:
+              schema:
+                type: string
+  /signin:
+    post:
+      operationId: post-api-v1-signin
+      summary: "Logs in a user and returns a session cookie"
+      requestBody:
+        description: "User credentials"
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+                tenant_id:
+                  type: string
+                  format: uuid     
+      responses:
+        "200":
+          description: "OK"
+          content:
+            text/plain:
+              schema:
+                type: string
+  /signup:
+    post:
+      operationId: post-api-v1-signup
+      summary: "Sign up a user"
+      requestBody:
+        description: "User signup credentials"
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+                confirm_password:
+                  type: string
+                tenant_id: 
+                  type: string
+                  format: uuid
+      responses:
+        "200":
+          description: "OK"
+          content:
+            text/plain:
+              schema:
+                type: string

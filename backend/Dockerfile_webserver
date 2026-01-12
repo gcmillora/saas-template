@@ -1,0 +1,42 @@
+# build docker binary
+FROM golang:1.24.2-alpine3.21 AS builder
+
+WORKDIR /app
+
+RUN apk update && apk add --no-cache git
+
+RUN --mount=type=cache,target=/go/pkg/mod/ \
+  --mount=type=bind,source=./backend/go.sum,target=go.sum \
+  --mount=type=bind,source=./backend/go.mod,target=go.mod \
+  go mod download -x;
+
+COPY ./backend .
+
+#check if .env.local exists
+RUN if [ ! -f ./backend/.env.local ]; then echo "Error: .env.local not found"; exit 1; fi
+
+# 
+RUN go mod vendor
+RUN go build -o /server cmd/webserver/main.go
+RUN go build -o /console cmd/console/main.go
+
+# actual server image
+FROM alpine:3.21
+
+WORKDIR /
+
+COPY --from=builder /server /server
+COPY --from=builder /console /console
+COPY --from=builder /app/assets /assets
+
+EXPOSE 8000
+
+# -D disables setting password
+RUN adduser -D nonroot nonroot
+
+RUN chown nonroot:nonroot /server
+
+USER nonroot:nonroot
+
+ENTRYPOINT ["/server"]
+

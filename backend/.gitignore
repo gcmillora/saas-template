@@ -1,0 +1,16 @@
+.DS_Store
+cmd/webserver/__debug_bin*
+cmd/worker/__debug_bin*
+.env.user
+.env.docker
+.env.local
+.env.test
+vacuum-ruleset.yaml
+vacuum.conf.yaml
+bin
+cover.out
+vendor
+
+# Air
+tmp/
+build-errors.log
