@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from "react-router";
+import { createBrowserRouter } from "react-router";
 import { AppLayout } from "./components/AppLayout";
 import { AuthContextProvider } from "./contexts/authContext";
 import { SignIn } from "./pages/SignIn";
