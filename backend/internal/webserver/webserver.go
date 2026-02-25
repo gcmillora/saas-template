@@ -6,12 +6,18 @@ import (
 	oapi_public "adobo/generated/oapi/public"
 	"adobo/internal/webserver/handler"
 	"adobo/internal/webserver/middleware"
+	"context"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 )
 
 type Webserver struct {
@@ -30,10 +36,19 @@ func NewWebserver(app *config.App) *Webserver {
 	r := chi.NewRouter()
 	r.Use(middleware.NewLoggerMiddleware())
 	r.Use(chimiddleware.Recoverer)
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{app.EnvVars().AppBaseUrl()},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}))
 	r.Get("/health", handler.GetHealth)
 
-	// Authenticated API routes
+	// Public API routes (rate limited)
+	authRateLimiter := middleware.NewRateLimiter(1, 5) // 1 req/sec, burst of 5
 	r.Group(func(r chi.Router) {
+		r.Use(authRateLimiter.Middleware())
 		r.Use(middleware.NewContextInjectorMiddleware())
 		baseURL := "/api/public/v1"
 		strictHandler := oapi_public.NewStrictHandlerWithOptions(
@@ -74,15 +89,31 @@ func NewWebserver(app *config.App) *Webserver {
 }
 
 func (ws *Webserver) Start() {
-
-	log.Print("WebServer listening on " + ws.serverAddr)
-
 	s := &http.Server{
 		Handler: ws.router,
 		Addr:    ws.serverAddr,
 	}
 
-	log.Fatal(s.ListenAndServe())
+	go func() {
+		log.Print("WebServer listening on " + ws.serverAddr)
+		if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	log.Print("Shutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := s.Shutdown(ctx); err != nil {
+		log.Fatal("Server forced to shutdown:", err)
+	}
+
+	log.Print("Server exited")
 }
 
 func (ws *Webserver) PrintRoutes() {

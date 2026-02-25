@@ -12,10 +12,10 @@ func main() {
 		command = os.Args[1]
 	}
 
-	a:= config.NewApp()
-	ws := webserver.NewWebserver(a)
+	app := config.NewApp()
+	ws := webserver.NewWebserver(app)
 
-	if command == "routes:list"{
+	if command == "routes:list" {
 		ws.PrintRoutes()
 	} else {
 		ws.Start()

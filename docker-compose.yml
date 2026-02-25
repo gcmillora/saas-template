@@ -57,3 +57,22 @@ services:
         /go/bin/air -c .air.toml
     profiles:
       - saas-backend
+  frontend:
+    image: node:22-alpine
+    container_name: saas-frontend
+    restart: unless-stopped
+    ports:
+      - "8009:8009"
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        npm install -g bun
+        bun install
+        bun run dev
+    profiles:
+      - frontend

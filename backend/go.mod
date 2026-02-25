@@ -4,6 +4,7 @@ go 1.24.0
 
 require (
 	github.com/go-chi/chi/v5 v5.2.2
+	github.com/go-chi/cors v1.2.2
 	github.com/go-errors/errors v1.5.1
 	github.com/go-jet/jet/v2 v2.13.0
 	github.com/google/uuid v1.6.0
@@ -13,6 +14,7 @@ require (
 	github.com/oapi-codegen/runtime v1.1.2
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	golang.org/x/crypto v0.40.0
+	golang.org/x/time v0.14.0
 )
 
 require (
