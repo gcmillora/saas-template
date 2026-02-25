@@ -6,7 +6,6 @@ import (
 	"adobo/internal/app/repository"
 	"adobo/internal/webserver/middleware"
 	"context"
-	"errors"
 
 	"github.com/google/uuid"
 	"github.com/oapi-codegen/runtime/types"
@@ -33,21 +32,15 @@ func GetUser(
 		return nil, err
 	}
 
-	users, err := repository.GetUserByID(ctx, app.DB(), userID, tenantID)
+	user, err := repository.GetUserByID(ctx, app.DB(), userID, tenantID)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(*users) == 0 {
-		return nil, errors.New("user not found")
-	}
-
-	data := (*users)[0]
-
 	return oapi.GetApiV1User200JSONResponse{
-		Email:     types.Email(*data.Email),
-		Id:        data.ID,
-		FirstName: data.FirstName,
-		LastName:  data.LastName,
+		Email:     types.Email(user.Email),
+		Id:        user.ID,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
 	}, nil
 }

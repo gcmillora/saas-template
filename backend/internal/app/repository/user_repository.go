@@ -13,27 +13,28 @@ import (
 func GetUserByID(
 	ctx context.Context,
 	db qrm.DB,
-	customerID uuid.UUID,
+	userID uuid.UUID,
 	tenantID uuid.UUID,
-) (*[]model.UserTbl, error) {
+) (*model.UserTbl, error) {
 	ctbl := table.UserTbl
 
 	stmt := pg.SELECT(ctbl.AllColumns).
 		FROM(ctbl).
 		WHERE(
 			pg.AND(
-				ctbl.ID.EQ(pg.UUID(customerID)),
+				ctbl.ID.EQ(pg.UUID(userID)),
+				ctbl.TenantID.EQ(pg.UUID(tenantID)),
 			),
 		)
-	
-	rows := []model.UserTbl{}
-	err := stmt.QueryContext(ctx, db, &rows)
+
+	dest := model.UserTbl{}
+	err := stmt.QueryContext(ctx, db, &dest)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &rows, nil
+	return &dest, nil
 }
 
 func GetUserByEmail(
@@ -84,40 +85,3 @@ func GetUsers(
 	return &rows, nil
 }
 
-func GetUsersPaginated(
-	ctx context.Context,
-	db qrm.DB,
-	tenantID uuid.UUID,
-	params PaginationParams,
-) (*PaginatedResponse[model.CategoryTbl], error) {
-	ctbl := table.CategoryTbl
-
-	whereConditions := pg.AND(
-		ctbl.TenantID.EQ(pg.UUID(tenantID)),
-	)
-
-	countStmt := pg.SELECT(pg.COUNT(ctbl.ID)).
-		FROM(ctbl).
-		WHERE(whereConditions)
-	
-	var totalCount struct {
-		Count int64
-	}
-
-	err := countStmt.QueryContext(ctx, db, &totalCount)
-	if err != nil {
-		return nil, err
-	}
-
-	baseQuery := pg.SELECT(ctbl.AllColumns).FROM(ctbl).WHERE(whereConditions)
-	stmt := params.ApplyPagination(baseQuery)
-
-	rows := []model.CategoryTbl{}
-	err = stmt.QueryContext(ctx, db, &rows)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return NewPaginatedResponse(rows, int(totalCount.Count), params), nil
-}

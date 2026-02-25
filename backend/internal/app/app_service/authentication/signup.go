@@ -40,11 +40,10 @@ func SignUp(ctx context.Context, app *config.App, body PostSignupBody) (*model.U
 	}
 
 	hashStr := string(hash)
-	emailStr := body.Email
 	defaultTenantID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
 
 	user := model.UserTbl{
-		Email:        &emailStr,
+		Email:        body.Email,
 		PasswordHash: &hashStr,
 		FirstName:    body.FirstName,
 		LastName:     body.LastName,

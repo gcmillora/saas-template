@@ -7,7 +7,7 @@ services:
   postgres:
     # Azure Database for PostgreSQL latest supported version
     # https://learn.microsoft.com/en-us/azure/postgresql/flexible-server/concepts-supported-versions
-    image: postgres:17
+    image: postgres:18
     container_name: postgres
     restart: unless-stopped
     environment:
@@ -22,18 +22,21 @@ services:
       timeout: 1s
       retries: 15
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
       - ./configs/dump.sql:/docker-entrypoint-initdb.d/init.sql
   go-backend:
-    image: golang:1.24-alpine
+    image: golang:1.25-alpine
     container_name: saas-backend
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
       - "8008:8008"
     environment:
       SERVER_PORT: "8008"
       DATABASE_NAME: "database"
-      DATABASE_URL: "postgresql://postgres:postgres@host.docker.internal:5432/database?sslmode=disable"
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/database?sslmode=disable"
       APP_BASE_URL: "http://localhost:8009/"
     env_file:
       - ./backend/.env.docker
@@ -51,8 +54,12 @@ services:
           echo "Installing Air..."
           go install github.com/air-verse/air@latest
         fi
-        # Run worker in background
-        ./commands.sh worker &
+        # Run migrations
+        echo "Running database migrations..."
+        go tool goose -dir db/migrations postgres "$DATABASE_URL" up
+        # Generate Jet models
+        echo "Generating Jet models..."
+        go tool jet -dsn="$DATABASE_URL" -schema=public -path=./generated/db
         # Run webserver with Air for hot reloading
         /go/bin/air -c .air.toml
     profiles:

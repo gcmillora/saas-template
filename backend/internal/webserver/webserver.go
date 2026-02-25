@@ -43,7 +43,10 @@ func NewWebserver(app *config.App) *Webserver {
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))
-	r.Get("/health", handler.GetHealth)
+	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	})
 
 	// Public API routes (rate limited)
 	authRateLimiter := middleware.NewRateLimiter(1, 5) // 1 req/sec, burst of 5
