@@ -19,50 +19,90 @@ paths:
       operationId: post-api-v1-signin
       summary: "Logs in a user and returns a session cookie"
       requestBody:
+        required: true
         description: "User credentials"
         content:
           application/json:
             schema:
               type: object
+              required:
+                - email
+                - password
               properties:
                 email:
                   type: string
+                  format: email
                 password:
                   type: string
-                tenant_id:
-                  type: string
-                  format: uuid     
       responses:
         "200":
-          description: "OK"
+          description: "Login successful"
           content:
             text/plain:
               schema:
                 type: string
+        "401":
+          description: "Invalid credentials"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /signup:
     post:
       operationId: post-api-v1-signup
-      summary: "Sign up a user"
+      summary: "Sign up a new user"
       requestBody:
+        required: true
         description: "User signup credentials"
         content:
           application/json:
             schema:
               type: object
+              required:
+                - email
+                - password
+                - confirm_password
               properties:
                 email:
                   type: string
+                  format: email
                 password:
                   type: string
+                  minLength: 8
                 confirm_password:
                   type: string
-                tenant_id: 
+                first_name:
                   type: string
-                  format: uuid
+                last_name:
+                  type: string
       responses:
         "200":
-          description: "OK"
+          description: "Signup successful"
           content:
             text/plain:
               schema:
                 type: string
+        "400":
+          description: "Validation error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /signout:
+    post:
+      operationId: post-api-v1-signout
+      summary: "Signs out the current user by clearing the session"
+      responses:
+        "200":
+          description: "Signout successful"
+          content:
+            text/plain:
+              schema:
+                type: string
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        message:
+          type: string

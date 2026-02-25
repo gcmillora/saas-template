@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,19 +11,31 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { usePostApiV1Signup } from "@/services/api/v1-public";
 
 export function SignUp() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
+  const signup = usePostApiV1Signup();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     if (password !== confirmPassword) {
-      alert("Passwords don't match");
+      setError("Passwords don't match");
       return;
     }
-    console.log("Sign up with:", { email, password });
+    try {
+      await signup.mutateAsync({
+        data: { email, password, confirm_password: confirmPassword },
+      });
+      navigate("/");
+    } catch {
+      setError("Signup failed. Please try again.");
+    }
   };
 
   return (
@@ -37,6 +49,9 @@ export function SignUp() {
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
+            {error && (
+              <p className="text-sm text-destructive">{error}</p>
+            )}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -56,6 +71,7 @@ export function SignUp() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                minLength={8}
               />
             </div>
             <div className="space-y-2">
@@ -70,8 +86,8 @@ export function SignUp() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full">
-              Sign Up
+            <Button type="submit" className="w-full" disabled={signup.isPending}>
+              {signup.isPending ? "Signing up..." : "Sign Up"}
             </Button>
             <p className="text-center text-sm text-muted-foreground">
               Already have an account?{" "}

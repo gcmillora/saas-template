@@ -1,13 +1,15 @@
-import { Provider } from "react-redux";
-import { store } from "./store";
+import { QueryProvider } from "./providers/QueryProvider";
 import { RouterProvider } from "react-router";
 import { router } from "./router";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 function App() {
   return (
-    <Provider store={store}>
-      <RouterProvider router={router} />
-    </Provider>
+    <ErrorBoundary>
+      <QueryProvider>
+        <RouterProvider router={router} />
+      </QueryProvider>
+    </ErrorBoundary>
   );
 }
 

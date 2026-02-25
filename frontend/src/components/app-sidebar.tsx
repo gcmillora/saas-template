@@ -1,4 +1,5 @@
-import { Home, Settings, Users, FileText } from "lucide-react";
+import { Home, Settings, Users, FileText, LogOut } from "lucide-react";
+import { useNavigate } from "react-router";
 
 import {
   Sidebar,
@@ -10,12 +11,10 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
-  SidebarMenuSub,
-  SidebarMenuSubItem,
-  SidebarMenuSubButton,
   SidebarFooter,
   SidebarRail,
 } from "@/components/ui/sidebar";
+import { usePostApiV1Signout } from "@/services/api/v1-public";
 
 const menuItems = [
   {
@@ -41,6 +40,18 @@ const menuItems = [
 ];
 
 export function AppSidebar() {
+  const navigate = useNavigate();
+  const signout = usePostApiV1Signout();
+
+  const handleSignout = async () => {
+    try {
+      await signout.mutateAsync();
+      navigate("/signin");
+    } catch {
+      navigate("/signin");
+    }
+  };
+
   return (
     <Sidebar>
       <SidebarHeader>
@@ -82,11 +93,9 @@ export function AppSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <a href="/profile">
-                <Users />
-                <span>Profile</span>
-              </a>
+            <SidebarMenuButton onClick={handleSignout}>
+              <LogOut />
+              <span>Sign Out</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

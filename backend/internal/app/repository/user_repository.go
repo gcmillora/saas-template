@@ -36,29 +36,27 @@ func GetUserByID(
 	return &rows, nil
 }
 
-func GetUserByAuthID(
+func GetUserByEmail(
 	ctx context.Context,
 	db qrm.DB,
-	authID uuid.UUID,
-) (*model.UserTbl, error ){
+	email string,
+) (*model.UserTbl, error) {
 	ctbl := table.UserTbl
 
 	stmt := pg.SELECT(ctbl.AllColumns).
 		FROM(ctbl).
 		WHERE(
-			pg.AND(
-				ctbl.AuthID.EQ(pg.UUID(authID)),
-			),
+			ctbl.Email.EQ(pg.String(email)),
 		)
-	
-	rows := []model.UserTbl{}
-	err := stmt.QueryContext(ctx, db, &rows)
+
+	dest := model.UserTbl{}
+	err := stmt.QueryContext(ctx, db, &dest)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &rows[0], nil
+	return &dest, nil
 }
 
 func GetUsers(

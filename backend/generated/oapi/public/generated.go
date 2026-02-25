@@ -18,19 +18,24 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Error defines model for Error.
+type Error struct {
+	Message *string `json:"message,omitempty"`
+}
+
 // PostApiV1SigninJSONBody defines parameters for PostApiV1Signin.
 type PostApiV1SigninJSONBody struct {
-	Email    *string             `json:"email,omitempty"`
-	Password *string             `json:"password,omitempty"`
-	TenantId *openapi_types.UUID `json:"tenant_id,omitempty"`
+	Email    openapi_types.Email `json:"email"`
+	Password string              `json:"password"`
 }
 
 // PostApiV1SignupJSONBody defines parameters for PostApiV1Signup.
 type PostApiV1SignupJSONBody struct {
-	ConfirmPassword *string             `json:"confirm_password,omitempty"`
-	Email           *string             `json:"email,omitempty"`
-	Password        *string             `json:"password,omitempty"`
-	TenantId        *openapi_types.UUID `json:"tenant_id,omitempty"`
+	ConfirmPassword string              `json:"confirm_password"`
+	Email           openapi_types.Email `json:"email"`
+	FirstName       *string             `json:"first_name,omitempty"`
+	LastName        *string             `json:"last_name,omitempty"`
+	Password        string              `json:"password"`
 }
 
 // PostApiV1SigninJSONRequestBody defines body for PostApiV1Signin for application/json ContentType.
@@ -120,6 +125,9 @@ type ClientInterface interface {
 
 	PostApiV1Signin(ctx context.Context, body PostApiV1SigninJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// PostApiV1Signout request
+	PostApiV1Signout(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// PostApiV1SignupWithBody request with any body
 	PostApiV1SignupWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -152,6 +160,18 @@ func (c *Client) PostApiV1SigninWithBody(ctx context.Context, contentType string
 
 func (c *Client) PostApiV1Signin(ctx context.Context, body PostApiV1SigninJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPostApiV1SigninRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1Signout(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1SignoutRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -253,6 +273,33 @@ func NewPostApiV1SigninRequestWithBody(server string, contentType string, body i
 	return req, nil
 }
 
+// NewPostApiV1SignoutRequest generates requests for PostApiV1Signout
+func NewPostApiV1SignoutRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/signout")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewPostApiV1SignupRequest calls the generic PostApiV1Signup builder with application/json body
 func NewPostApiV1SignupRequest(server string, body PostApiV1SignupJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -344,6 +391,9 @@ type ClientWithResponsesInterface interface {
 
 	PostApiV1SigninWithResponse(ctx context.Context, body PostApiV1SigninJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1SigninResponse, error)
 
+	// PostApiV1SignoutWithResponse request
+	PostApiV1SignoutWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*PostApiV1SignoutResponse, error)
+
 	// PostApiV1SignupWithBodyWithResponse request with any body
 	PostApiV1SignupWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1SignupResponse, error)
 
@@ -374,6 +424,7 @@ func (r GetApiV1HealthResponse) StatusCode() int {
 type PostApiV1SigninResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON401      *Error
 }
 
 // Status returns HTTPResponse.Status
@@ -392,9 +443,31 @@ func (r PostApiV1SigninResponse) StatusCode() int {
 	return 0
 }
 
+type PostApiV1SignoutResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiV1SignoutResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiV1SignoutResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type PostApiV1SignupResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON400      *Error
 }
 
 // Status returns HTTPResponse.Status
@@ -437,6 +510,15 @@ func (c *ClientWithResponses) PostApiV1SigninWithResponse(ctx context.Context, b
 		return nil, err
 	}
 	return ParsePostApiV1SigninResponse(rsp)
+}
+
+// PostApiV1SignoutWithResponse request returning *PostApiV1SignoutResponse
+func (c *ClientWithResponses) PostApiV1SignoutWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*PostApiV1SignoutResponse, error) {
+	rsp, err := c.PostApiV1Signout(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1SignoutResponse(rsp)
 }
 
 // PostApiV1SignupWithBodyWithResponse request with arbitrary body returning *PostApiV1SignupResponse
@@ -485,6 +567,32 @@ func ParsePostApiV1SigninResponse(rsp *http.Response) (*PostApiV1SigninResponse,
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostApiV1SignoutResponse parses an HTTP response from a PostApiV1SignoutWithResponse call
+func ParsePostApiV1SignoutResponse(rsp *http.Response) (*PostApiV1SignoutResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiV1SignoutResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
 	return response, nil
 }
 
@@ -501,6 +609,16 @@ func ParsePostApiV1SignupResponse(rsp *http.Response) (*PostApiV1SignupResponse,
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -512,7 +630,10 @@ type ServerInterface interface {
 	// Logs in a user and returns a session cookie
 	// (POST /signin)
 	PostApiV1Signin(w http.ResponseWriter, r *http.Request)
-	// Sign up a user
+	// Signs out the current user by clearing the session
+	// (POST /signout)
+	PostApiV1Signout(w http.ResponseWriter, r *http.Request)
+	// Sign up a new user
 	// (POST /signup)
 	PostApiV1Signup(w http.ResponseWriter, r *http.Request)
 }
@@ -533,7 +654,13 @@ func (_ Unimplemented) PostApiV1Signin(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Sign up a user
+// Signs out the current user by clearing the session
+// (POST /signout)
+func (_ Unimplemented) PostApiV1Signout(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Sign up a new user
 // (POST /signup)
 func (_ Unimplemented) PostApiV1Signup(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -567,6 +694,20 @@ func (siw *ServerInterfaceWrapper) PostApiV1Signin(w http.ResponseWriter, r *htt
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PostApiV1Signin(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PostApiV1Signout operation middleware
+func (siw *ServerInterfaceWrapper) PostApiV1Signout(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostApiV1Signout(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -710,6 +851,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/signin", wrapper.PostApiV1Signin)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/signout", wrapper.PostApiV1Signout)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/signup", wrapper.PostApiV1Signup)
 	})
 
@@ -751,6 +895,32 @@ func (response PostApiV1Signin200TextResponse) VisitPostApiV1SigninResponse(w ht
 	return err
 }
 
+type PostApiV1Signin401JSONResponse Error
+
+func (response PostApiV1Signin401JSONResponse) VisitPostApiV1SigninResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostApiV1SignoutRequestObject struct {
+}
+
+type PostApiV1SignoutResponseObject interface {
+	VisitPostApiV1SignoutResponse(w http.ResponseWriter) error
+}
+
+type PostApiV1Signout200TextResponse string
+
+func (response PostApiV1Signout200TextResponse) VisitPostApiV1SignoutResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(200)
+
+	_, err := w.Write([]byte(response))
+	return err
+}
+
 type PostApiV1SignupRequestObject struct {
 	Body *PostApiV1SignupJSONRequestBody
 }
@@ -769,6 +939,15 @@ func (response PostApiV1Signup200TextResponse) VisitPostApiV1SignupResponse(w ht
 	return err
 }
 
+type PostApiV1Signup400JSONResponse Error
+
+func (response PostApiV1Signup400JSONResponse) VisitPostApiV1SignupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// Returns a health check response
@@ -777,7 +956,10 @@ type StrictServerInterface interface {
 	// Logs in a user and returns a session cookie
 	// (POST /signin)
 	PostApiV1Signin(ctx context.Context, request PostApiV1SigninRequestObject) (PostApiV1SigninResponseObject, error)
-	// Sign up a user
+	// Signs out the current user by clearing the session
+	// (POST /signout)
+	PostApiV1Signout(ctx context.Context, request PostApiV1SignoutRequestObject) (PostApiV1SignoutResponseObject, error)
+	// Sign up a new user
 	// (POST /signup)
 	PostApiV1Signup(ctx context.Context, request PostApiV1SignupRequestObject) (PostApiV1SignupResponseObject, error)
 }
@@ -859,6 +1041,30 @@ func (sh *strictHandler) PostApiV1Signin(w http.ResponseWriter, r *http.Request)
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PostApiV1SigninResponseObject); ok {
 		if err := validResponse.VisitPostApiV1SigninResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PostApiV1Signout operation middleware
+func (sh *strictHandler) PostApiV1Signout(w http.ResponseWriter, r *http.Request) {
+	var request PostApiV1SignoutRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PostApiV1Signout(ctx, request.(PostApiV1SignoutRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostApiV1Signout")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PostApiV1SignoutResponseObject); ok {
+		if err := validResponse.VisitPostApiV1SignoutResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
