@@ -25,7 +25,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./configs/dump.sql:/docker-entrypoint-initdb.d/init.sql
   go-backend:
-    image: golang:1.25
+    image: golang:1.24-alpine
     container_name: saas-backend
     restart: unless-stopped
     ports:
