@@ -31,8 +31,7 @@ export const AuthContextProvider = (props: PropsWithChildren): JSX.Element => {
   if (isLoading) return <></>;
 
   if (error) {
-    console.log(error);
-    console.log("Not authenticated");
+    window.location.replace("/signin");
     return <></>;
   }
 
