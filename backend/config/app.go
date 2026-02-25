@@ -10,14 +10,12 @@ import (
 	"github.com/patrickmn/go-cache"
 )
 
-
 type App struct {
-	env *provider.EnvProvider
-	db *provider.DbProvider
-	supabase *provider.SupabaseProvider
+	env     *provider.EnvProvider
+	db      *provider.DbProvider
 	rootDir string
-	logger *slog.Logger
-	cache *cache.Cache
+	logger  *slog.Logger
+	cache   *cache.Cache
 	session *sessions.CookieStore
 }
 
@@ -56,13 +54,6 @@ func (app *App) Cache() *cache.Cache {
 	return app.cache
 }
 
-func (app *App) Supabase() *provider.SupabaseProvider {
-	if app.supabase == nil {
-		app.supabase = provider.NewSupabaseProvider(app.env)
-	}
-	return app.supabase
-}
-
 func (app *App) setRootDir() {
 	_, b, _, _ := runtime.Caller(0)
 	app.rootDir = path.Join(path.Dir(b), "..")
@@ -76,7 +67,6 @@ func NewApp() *App {
 	app.setRootDir()
 
 	provider.NewValidationProvider()
-	app.supabase = provider.NewSupabaseProvider(app.env)
 	app.session = provider.NewSessionProvider(app.env)
 
 	return &app

@@ -17,7 +17,6 @@ func (h *Handler) GetApiV1Health(ctx context.Context, request oapi_public.GetApi
 	// For production, consider checking:
 	//   - Database connectivity: h.app.DB().Ping()
 	//   - Cache availability: h.app.Cache()
-	//   - External service status: h.app.Supabase()
 
 	return oapi_public.GetApiV1Health200TextResponse("OK"), nil
 }

@@ -83,14 +83,8 @@ case "${1}" in
   go tool oapi-codegen -config ./generated/oapi/public/codegen.yaml ./openapi-public.yaml
 
   echo -e "${GREEN}Finished generating OpenAPI code...${NC}"
-  echo -e "${GREEN}Generating frontend types from ./openapi.yaml"
-
-  bunx @rtk-query/codegen-openapi ../frontend/src/services/api/config.cjs
-  echo -e "${GREEN}Finished generating frontend types"
-
-  echo -e "${GREEN}Generating frontend types from ./openapi-public.yaml"
-
-  bunx @rtk-query/codegen-openapi ../frontend/src/services/api/config_public.cjs
+  echo -e "${GREEN}Generating frontend types with Orval..."
+  cd ../frontend && bunx orval && cd ../backend
   echo -e "${GREEN}Finished generating frontend types"
   exit 0
   ;;

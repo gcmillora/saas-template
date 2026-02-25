@@ -1,5 +1,5 @@
 import { createContext, type JSX, type PropsWithChildren } from "react";
-import { useGetUserQuery, type BaseUser } from "../services/api/v1";
+import { useGetApiV1User, type BaseUser } from "../services/api/v1";
 import { UnauthorizedRoutes } from "../Routes";
 
 export type AuthContextInterface = {
@@ -9,7 +9,7 @@ export type AuthContextInterface = {
 export const AuthContext = createContext<AuthContextInterface>({ user: null });
 
 export const AuthContextProvider = (props: PropsWithChildren): JSX.Element => {
-  const { data, error, isLoading } = useGetUserQuery();
+  const { data, error, isLoading } = useGetApiV1User();
 
   if (
     Object.values(UnauthorizedRoutes).includes(
@@ -35,8 +35,10 @@ export const AuthContextProvider = (props: PropsWithChildren): JSX.Element => {
     console.log("Not authenticated");
     return <></>;
   }
+
+  const user = data?.status === 200 ? data.data : null;
   const authCtx: AuthContextInterface = {
-    user: data ?? null,
+    user: user ?? null,
   };
 
   return (

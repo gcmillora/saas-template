@@ -9,8 +9,7 @@ import (
 
 // SessionData represents the decoded session values
 type SessionData struct {
-	UserID string
-	AuthID string
+	UserID   string
 	TenantID string
 }
 
@@ -30,10 +29,6 @@ func GetSessionData(ctx context.Context, store sessions.Store) (*SessionData, er
 
 	if userID, ok := session.Values["user_id"].(string); ok {
 		data.UserID = userID
-	}
-
-	if authID, ok := session.Values["auth_id"].(string); ok {
-		data.AuthID = authID
 	}
 
 	if tenantID, ok := session.Values["tenant_id"].(string); ok {
