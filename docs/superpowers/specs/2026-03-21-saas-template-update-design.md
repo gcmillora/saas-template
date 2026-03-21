@@ -14,10 +14,11 @@ Upgrade to Go 1.25. Match batch's dependency set:
 
 ### Config & Providers
 
-Rewrite `config/app.go` to match batch's lazy-loading App struct pattern. Each provider initializes on first access via getter methods.
+Rewrite `config/app.go` to match batch's App struct pattern. Core providers (env, db, session, validation) initialize eagerly in `NewApp()`. Other providers (logger, cache, storage, resend) initialize lazily on first access via getter methods.
+
+`config/app.go` — App struct definition with all provider fields and getter methods.
 
 Providers (one file each in `config/provider/`):
-- `app.go` — App struct definition with all provider fields
 - `env_provider.go` — environment variables (APP_ENV, APP_BASE_URL, APP_SECRET, SESSION_SECRET, DATABASE_URL, SERVER_PORT, LOG_LEVEL, SUPABASE_URL, SUPABASE_KEY, RESEND_API_KEY, RESEND_FROM_EMAIL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET)
 - `database_provider.go` — PostgreSQL connection
 - `session_provider.go` — Gorilla cookie store
@@ -35,11 +36,12 @@ Three Goose migrations in `db/migrations/`:
 ```sql
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- +goose Up
 CREATE TABLE tenant_tbl (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE user_tbl (
@@ -51,10 +53,15 @@ CREATE TABLE user_tbl (
     auth_provider VARCHAR(50) DEFAULT 'email',
     auth_provider_id VARCHAR(255),
     role VARCHAR(50) NOT NULL DEFAULT 'user',
-    tenant_id UUID NOT NULL REFERENCES tenant_tbl(id) ON DELETE CASCADE,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL
+    onboarding_completed BOOLEAN NOT NULL DEFAULT FALSE,
+    tenant_id UUID NOT NULL REFERENCES tenant_tbl(id),
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
+
+-- +goose Down
+DROP TABLE IF EXISTS user_tbl;
+DROP TABLE IF EXISTS tenant_tbl;
 
 CREATE INDEX idx_user_tbl_email ON user_tbl(email);
 CREATE INDEX idx_user_tbl_tenant_id ON user_tbl(tenant_id);
@@ -62,40 +69,41 @@ CREATE INDEX idx_user_tbl_tenant_id ON user_tbl(tenant_id);
 
 `00002_password_reset.sql`:
 ```sql
+-- +goose Up
 CREATE TABLE password_reset_tbl (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES user_tbl(id) ON DELETE CASCADE,
-    token VARCHAR(255) NOT NULL,
+    token_hash VARCHAR(64) UNIQUE NOT NULL,
     expires_at TIMESTAMP NOT NULL,
-    used BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL
+    used_at TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_password_reset_tbl_token ON password_reset_tbl(token);
+CREATE INDEX idx_password_reset_tbl_token_hash ON password_reset_tbl(token_hash);
 CREATE INDEX idx_password_reset_tbl_user_id ON password_reset_tbl(user_id);
+
+-- +goose Down
+DROP TABLE IF EXISTS password_reset_tbl;
 ```
 
-`00003_onboarding.sql`:
-```sql
-ALTER TABLE user_tbl ADD COLUMN onboarding_completed BOOLEAN NOT NULL DEFAULT FALSE;
-```
+Note: `onboarding_completed` is included in the init migration (00001) rather than a separate migration, since this is a fresh template. Only two migrations needed.
 
 ### OpenAPI Specs
 
-Two specs, matching batch's structure.
+Two specs, matching batch's structure. Operation IDs do NOT include `public` — the base URL `/api/public/v1` is set in the router when mounting, not in the operation IDs.
 
 `openapi-public.yaml` (base: `/api/public/v1`, no auth):
-- `POST /signin` — email + password, returns user or 401
-- `POST /signup` — email, password, confirmPassword, firstName, lastName, returns user or 400
-- `POST /forgot-password` — email, returns 200 (always succeeds for security)
-- `POST /reset-password` — token + newPassword + confirmPassword, returns 200 or 400
-- `GET /health` — returns 200
+- `POST /signin` (operationId: `post-api-v1-signin`) — email + password, returns user or 401
+- `POST /signup` (operationId: `post-api-v1-signup`) — email, password, confirmPassword, firstName, lastName, returns user or 400
+- `POST /forgot-password` (operationId: `post-api-v1-forgot-password`) — email, returns 200 (always succeeds for security)
+- `POST /reset-password` (operationId: `post-api-v1-reset-password`) — token + newPassword + confirmPassword, returns 200 or 400
+- `POST /signout` (operationId: `post-api-v1-signout`) — clears session
 
 `openapi.yaml` (base: `/api/v1`, requires auth):
-- `GET /user` — returns authenticated user
-- `PATCH /user/onboarding` — marks onboarding as completed
-- `POST /signout` — clears session
+- `GET /user` (operationId: `get-api-v1-user`) — returns authenticated user
+- `PATCH /user/onboarding` (operationId: `patch-api-v1-user-onboarding`) — marks onboarding as completed
+
+Health endpoint is registered directly on the router (not via OpenAPI), matching batch.
 
 Schemas: BaseUser (id, email, firstName, lastName, role, onboardingCompleted), Error (message), SigninRequest, SignupRequest, ForgotPasswordRequest, ResetPasswordRequest, OnboardingRequest.
 
@@ -105,19 +113,18 @@ Code generation config files:
 
 ### Handlers
 
-File naming: `{method}_api_v1_{resource}.go` for authenticated, `{method}_api_public_v1_{resource}.go` for public.
+File naming: `{method}_api_v1_{resource}.go` for all handlers (both public and authenticated). The public vs. authenticated distinction is handled by which router group the endpoint is registered in, not the file name. This matches batch's actual pattern.
 
 Each handler has a comment `// METHOD (/route)` above the function. All handlers are thin — delegate to app_service, return result. Session management (set/clear cookies) stays in handlers since it needs HTTP primitives.
 
 Files:
-- `post_api_public_v1_signin.go` — call authentication.SignIn, set session
-- `post_api_public_v1_signup.go` — call authentication.SignUp
-- `post_api_public_v1_forgot_password.go` — call authentication.ForgotPassword
-- `post_api_public_v1_reset_password.go` — call authentication.ResetPassword
-- `get_api_public_v1_health.go` — return 200
+- `post_api_v1_signin.go` — call authentication.SignIn, set session
+- `post_api_v1_signup.go` — call authentication.SignUp
+- `post_api_v1_forgot_password.go` — call authentication.ForgotPassword
+- `post_api_v1_reset_password.go` — call authentication.ResetPassword
+- `post_api_v1_signout.go` — clear session, return 200
 - `get_api_v1_user.go` — call user.GetUser
 - `patch_api_v1_user_onboarding.go` — call user.UpdateOnboarding
-- `post_api_v1_signout.go` — clear session, return 200
 
 `baseHandler.go` — Handler struct with `app *config.App` field and constructor.
 
@@ -139,8 +146,8 @@ One file per operation, organized by domain in `internal/app/app_service/`.
 - `create_tenant.go` — create tenant record (called from signup)
 
 `util_service/`:
-- `email.go` — send email via Resend
-- `password.go` — password validation rules
+- `email/send_reset_email.go` — send password reset email via Resend
+- `password/validate.go` — password validation rules
 
 All functions follow signature: `func Name(ctx context.Context, app *config.App, ...params) (ResponseType, error)`. Extract sessionData (userID, tenantID) from session at start. All queries scoped by tenantID.
 
@@ -148,7 +155,7 @@ All functions follow signature: `func Name(ctx context.Context, app *config.App,
 
 `repository/`:
 - `user_repository.go` — GetUserByEmail, GetUserByID
-- `password_reset_repository.go` — GetPasswordResetByToken
+- `password_reset_repository.go` — GetPasswordResetByTokenHash
 - `tenant_repository.go` — GetTenantByID
 - `pagination.go` — shared pagination helper
 
@@ -171,10 +178,12 @@ All use Jet SQL builder. First param `ctx context.Context`, second `qrm.DB`. Mut
 ### Webserver Setup
 
 `internal/webserver/webserver.go` — Chi router setup matching batch:
-1. Global: Logger, Recoverer, CORS
-2. Public routes group: ContextInjector, RateLimiter, public handlers
-3. Authenticated routes group: ContextInjector, AuthMiddleware, authenticated handlers
-4. Graceful shutdown
+1. Global: Logger, Recoverer, CORS (include PATCH in allowed methods)
+2. Health endpoint: registered directly on router, not via OpenAPI
+3. Public routes group: ContextInjector, RateLimiter, public handlers
+4. Authenticated routes group: ContextInjector, AuthMiddleware, authenticated handlers
+5. ResponseErrorHandlerFunc: `HandleErrorWithLog(app)` maps custom error types to HTTP status codes and logs errors via slog
+6. Graceful shutdown
 
 ### Entry Points
 
@@ -208,7 +217,7 @@ Build tooling: Bun, Vite with Rolldown.
 - `SignUp.tsx` — registration form with password confirmation
 - `ForgotPassword.tsx` — email form, uses usePostApiPublicV1ForgotPassword
 - `ResetPassword.tsx` — new password form with token from URL
-- `Dashboard.tsx` — simple welcome page showing user's name from auth context
+- `Dashboard.tsx` — welcome page within AppLayout. Shows a heading "Welcome, {firstName}" using user from auth context. No other content — just the greeting inside the sidebar layout shell.
 - `ErrorPage.tsx` — error boundary page
 - `NotFound.tsx` — 404 page
 
