@@ -30,13 +30,13 @@ Providers (one file each in `config/provider/`):
 
 ### Database Migrations
 
-Three Goose migrations in `db/migrations/`:
+Two Goose migrations in `db/migrations/`:
 
 `00001_init.sql`:
 ```sql
+-- +goose Up
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- +goose Up
 CREATE TABLE tenant_tbl (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
@@ -50,7 +50,7 @@ CREATE TABLE user_tbl (
     password_hash VARCHAR(255),
     first_name VARCHAR(255),
     last_name VARCHAR(255),
-    auth_provider VARCHAR(50) DEFAULT 'email',
+    auth_provider VARCHAR(50) NOT NULL DEFAULT 'email',
     auth_provider_id VARCHAR(255),
     role VARCHAR(50) NOT NULL DEFAULT 'user',
     onboarding_completed BOOLEAN NOT NULL DEFAULT FALSE,
@@ -59,12 +59,13 @@ CREATE TABLE user_tbl (
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+CREATE INDEX idx_user_tbl_email ON user_tbl(email);
+CREATE INDEX idx_user_tbl_tenant_id ON user_tbl(tenant_id);
+
 -- +goose Down
 DROP TABLE IF EXISTS user_tbl;
 DROP TABLE IF EXISTS tenant_tbl;
-
-CREATE INDEX idx_user_tbl_email ON user_tbl(email);
-CREATE INDEX idx_user_tbl_tenant_id ON user_tbl(tenant_id);
+DROP EXTENSION IF EXISTS "uuid-ossp";
 ```
 
 `00002_password_reset.sql`:
