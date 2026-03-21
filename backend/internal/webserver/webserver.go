@@ -1,17 +1,17 @@
 package webserver
 
 import (
-	"saas-template/config"
-	"saas-template/generated/oapi"
-	oapi_public "saas-template/generated/oapi/public"
-	"saas-template/internal/webserver/handler"
-	"saas-template/internal/webserver/middleware"
 	"context"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"saas-template/config"
+	"saas-template/generated/oapi"
+	oapi_public "saas-template/generated/oapi/public"
+	"saas-template/internal/webserver/handler"
+	"saas-template/internal/webserver/middleware"
 	"syscall"
 	"time"
 
@@ -38,14 +38,14 @@ func NewWebserver(app *config.App) *Webserver {
 	r.Use(chimiddleware.Recoverer)
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{app.EnvVars().AppBaseUrl()},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("OK"))
 	})
 
 	// Public API routes (rate limited)
@@ -113,7 +113,7 @@ func (ws *Webserver) Start() {
 	defer cancel()
 
 	if err := s.Shutdown(ctx); err != nil {
-		log.Fatal("Server forced to shutdown:", err)
+		log.Print("Server forced to shutdown:", err)
 	}
 
 	log.Print("Server exited")

@@ -2,10 +2,9 @@ package errors
 
 import "encoding/json"
 
-
 type CustomErr struct {
 	Message string
-	Data interface{}
+	Data    interface{}
 }
 
 func (c *CustomErr) Error() string {
@@ -46,4 +45,3 @@ type ValidationError struct {
 type NotFoundError struct {
 	CustomErr
 }
-
