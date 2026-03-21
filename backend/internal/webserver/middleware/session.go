@@ -11,6 +11,7 @@ import (
 type SessionData struct {
 	UserID   string
 	TenantID string
+	Role     string
 }
 
 // GetSessionData retrieves all session values and maps them to SessionData
@@ -33,6 +34,10 @@ func GetSessionData(ctx context.Context, store sessions.Store) (*SessionData, er
 
 	if tenantID, ok := session.Values["tenant_id"].(string); ok {
 		data.TenantID = tenantID
+	}
+
+	if role, ok := session.Values["role"].(string); ok {
+		data.Role = role
 	}
 
 	return data, nil
