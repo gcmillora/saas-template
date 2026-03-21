@@ -1,14 +1,15 @@
 package authentication
 
 import (
+	"context"
+	"errors"
 	"saas-template/config"
 	"saas-template/generated/db/database/public/model"
 	"saas-template/internal/app/mutation"
 	"saas-template/internal/app/repository"
-	"context"
-	"errors"
+	"saas-template/internal/app/util_service/password"
+	"strings"
 
-	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -25,8 +26,8 @@ func SignUp(ctx context.Context, app *config.App, body PostSignupBody) (*model.U
 		return nil, errors.New("passwords do not match")
 	}
 
-	if len(body.Password) < 8 {
-		return nil, errors.New("password must be at least 8 characters")
+	if errs := password.ValidateComplexity(body.Password); len(errs) > 0 {
+		return nil, errors.New("Password does not meet requirements: " + strings.Join(errs, ", "))
 	}
 
 	existing, _ := repository.GetUserByEmail(ctx, app.DB(), body.Email)
@@ -40,7 +41,13 @@ func SignUp(ctx context.Context, app *config.App, body PostSignupBody) (*model.U
 	}
 
 	hashStr := string(hash)
-	defaultTenantID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
+
+	tenant, err := mutation.CreateTenant(ctx, app.DB(), model.TenantTbl{
+		Name: body.Email,
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	user := model.UserTbl{
 		Email:        body.Email,
@@ -48,7 +55,8 @@ func SignUp(ctx context.Context, app *config.App, body PostSignupBody) (*model.U
 		FirstName:    body.FirstName,
 		LastName:     body.LastName,
 		AuthProvider: "email",
-		TenantID:     defaultTenantID,
+		TenantID:     tenant.ID,
+		Role:         "user",
 	}
 
 	created, err := mutation.CreateUser(ctx, app.DB(), user)
