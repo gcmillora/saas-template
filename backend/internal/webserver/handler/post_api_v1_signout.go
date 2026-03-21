@@ -1,13 +1,20 @@
 package handler
 
 import (
-	oapi_public "saas-template/generated/oapi/public"
-	"saas-template/internal/webserver/middleware"
 	"context"
 	"errors"
+	oapi_public "saas-template/generated/oapi/public"
+	"saas-template/internal/app/app_service/authentication"
+	"saas-template/internal/webserver/middleware"
+
+	"github.com/google/uuid"
 )
 
-func (h *Handler) PostApiV1Signout(ctx context.Context, request oapi_public.PostApiV1SignoutRequestObject) (oapi_public.PostApiV1SignoutResponseObject, error) {
+// POST (/signout)
+func (h *Handler) PostApiV1Signout(
+	ctx context.Context,
+	request oapi_public.PostApiV1SignoutRequestObject,
+) (oapi_public.PostApiV1SignoutResponseObject, error) {
 	w := middleware.GetResponseWriter(ctx)
 	r := middleware.GetRequest(ctx)
 	if w == nil || r == nil {
@@ -19,10 +26,21 @@ func (h *Handler) PostApiV1Signout(ctx context.Context, request oapi_public.Post
 		return nil, err
 	}
 
+	if userIDStr, ok := session.Values["user_id"].(string); ok {
+		if userID, err := uuid.Parse(userIDStr); err == nil {
+			if tenantIDStr, ok := session.Values["tenant_id"].(string); ok {
+				if tenantID, err := uuid.Parse(tenantIDStr); err == nil {
+					authentication.SignOut(ctx, h.app, userID, tenantID)
+				}
+			}
+		}
+	}
+
 	session.Options.MaxAge = -1
 	if err := session.Save(r, w); err != nil {
 		return nil, err
 	}
 
-	return oapi_public.PostApiV1Signout200TextResponse("Signout successful."), nil
+	msg := "Signout successful."
+	return oapi_public.PostApiV1Signout200JSONResponse{Message: &msg}, nil
 }
