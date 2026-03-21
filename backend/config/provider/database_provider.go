@@ -52,6 +52,5 @@ func NewDbProvider(env *EnvProvider) *DbProvider {
 		log.Fatal("Unable to connect to DB")
 	}
 
-
 	return &DbProvider{db}
 }

@@ -1,8 +1,8 @@
 package handler
 
 import (
-	oapi_public "adobo/generated/oapi/public"
-	"adobo/internal/webserver/middleware"
+	oapi_public "saas-template/generated/oapi/public"
+	"saas-template/internal/webserver/middleware"
 	"context"
 	"errors"
 )

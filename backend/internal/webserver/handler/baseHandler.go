@@ -15,9 +15,9 @@
 package handler
 
 import (
-	"adobo/config"
-	"adobo/generated/oapi"
-	oapi_public "adobo/generated/oapi/public"
+	"saas-template/config"
+	"saas-template/generated/oapi"
+	oapi_public "saas-template/generated/oapi/public"
 )
 
 // CombinedStrictServerInterface combines both the main API and public API interfaces.

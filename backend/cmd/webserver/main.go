@@ -1,8 +1,8 @@
 package main
 
 import (
-	"adobo/config"
-	"adobo/internal/webserver"
+	"saas-template/config"
+	"saas-template/internal/webserver"
 	"os"
 )
 

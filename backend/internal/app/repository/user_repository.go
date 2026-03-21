@@ -1,8 +1,8 @@
 package repository
 
 import (
-	"adobo/generated/db/database/public/model"
-	"adobo/generated/db/database/public/table"
+	"saas-template/generated/db/database/public/model"
+	"saas-template/generated/db/database/public/table"
 	"context"
 
 	pg "github.com/go-jet/jet/v2/postgres"

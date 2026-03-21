@@ -1,10 +1,10 @@
 package authentication
 
 import (
-	"adobo/config"
-	"adobo/generated/db/database/public/model"
-	"adobo/internal/app/mutation"
-	"adobo/internal/app/repository"
+	"saas-template/config"
+	"saas-template/generated/db/database/public/model"
+	"saas-template/internal/app/mutation"
+	"saas-template/internal/app/repository"
 	"context"
 	"errors"
 

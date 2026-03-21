@@ -1,11 +1,11 @@
 package webserver
 
 import (
-	"adobo/config"
-	"adobo/generated/oapi"
-	oapi_public "adobo/generated/oapi/public"
-	"adobo/internal/webserver/handler"
-	"adobo/internal/webserver/middleware"
+	"saas-template/config"
+	"saas-template/generated/oapi"
+	oapi_public "saas-template/generated/oapi/public"
+	"saas-template/internal/webserver/handler"
+	"saas-template/internal/webserver/middleware"
 	"context"
 	"fmt"
 	"log"

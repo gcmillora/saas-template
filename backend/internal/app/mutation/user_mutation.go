@@ -1,8 +1,8 @@
 package mutation
 
 import (
-	"adobo/generated/db/database/public/model"
-	"adobo/generated/db/database/public/table"
+	"saas-template/generated/db/database/public/model"
+	"saas-template/generated/db/database/public/table"
 	"context"
 	"time"
 

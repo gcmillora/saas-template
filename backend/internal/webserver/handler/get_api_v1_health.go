@@ -1,7 +1,7 @@
 package handler
 
 import (
-	oapi_public "adobo/generated/oapi/public"
+	oapi_public "saas-template/generated/oapi/public"
 	"context"
 )
 

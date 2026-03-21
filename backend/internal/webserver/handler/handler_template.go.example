@@ -1,11 +1,11 @@
 package handler
 
 import (
-	"adobo/config"
-	"adobo/generated/oapi"
-	"adobo/internal/app/repository"
-	"adobo/internal/app/mutation"
-	"adobo/internal/webserver/middleware"
+	"saas-template/config"
+	"saas-template/generated/oapi"
+	"saas-template/internal/app/repository"
+	"saas-template/internal/app/mutation"
+	"saas-template/internal/webserver/middleware"
 	"context"
 	"errors"
 

@@ -21,19 +21,27 @@ type EnvProvider struct {
 	googleClientSecret string
 	githubClientID     string
 	githubClientSecret string
+	supabaseUrl        string
+	supabaseKey        string
+	resendApiKey       string
+	resendFromEmail    string
 }
 
 func (e *EnvProvider) AppEnv() string             { return e.appEnv }
-func (e *EnvProvider) AppBaseUrl() string          { return e.appBaseUrl }
-func (e *EnvProvider) AppSecret() string           { return e.appSecret }
-func (e *EnvProvider) DatabaseUrl() string         { return e.databaseUrl }
-func (e *EnvProvider) LogLevel() string            { return e.logLevel }
-func (e *EnvProvider) ServerPort() string          { return e.serverPort }
-func (e *EnvProvider) SessionSecret() string       { return e.sessionSecret }
-func (e *EnvProvider) GoogleClientID() string      { return e.googleClientID }
-func (e *EnvProvider) GoogleClientSecret() string  { return e.googleClientSecret }
-func (e *EnvProvider) GithubClientID() string      { return e.githubClientID }
-func (e *EnvProvider) GithubClientSecret() string  { return e.githubClientSecret }
+func (e *EnvProvider) AppBaseUrl() string         { return e.appBaseUrl }
+func (e *EnvProvider) AppSecret() string          { return e.appSecret }
+func (e *EnvProvider) DatabaseUrl() string        { return e.databaseUrl }
+func (e *EnvProvider) LogLevel() string           { return e.logLevel }
+func (e *EnvProvider) ServerPort() string         { return e.serverPort }
+func (e *EnvProvider) SessionSecret() string      { return e.sessionSecret }
+func (e *EnvProvider) GoogleClientID() string     { return e.googleClientID }
+func (e *EnvProvider) GoogleClientSecret() string { return e.googleClientSecret }
+func (e *EnvProvider) GithubClientID() string     { return e.githubClientID }
+func (e *EnvProvider) GithubClientSecret() string { return e.githubClientSecret }
+func (e *EnvProvider) SupabaseUrl() string        { return e.supabaseUrl }
+func (e *EnvProvider) SupabaseKey() string        { return e.supabaseKey }
+func (e *EnvProvider) ResendApiKey() string       { return e.resendApiKey }
+func (e *EnvProvider) ResendFromEmail() string    { return e.resendFromEmail }
 
 func NewEnvProvider(rootDir string) *EnvProvider {
 	fallbackLookupEnv := func(key string, fallback string) string {
@@ -64,5 +72,9 @@ func NewEnvProvider(rootDir string) *EnvProvider {
 		googleClientSecret: fallbackLookupEnv("GOOGLE_CLIENT_SECRET", ""),
 		githubClientID:     fallbackLookupEnv("GITHUB_CLIENT_ID", ""),
 		githubClientSecret: fallbackLookupEnv("GITHUB_CLIENT_SECRET", ""),
+		supabaseUrl:        requireLookupEnv("SUPABASE_URL"),
+		supabaseKey:        requireLookupEnv("SUPABASE_KEY"),
+		resendApiKey:       fallbackLookupEnv("RESEND_API_KEY", ""),
+		resendFromEmail:    fallbackLookupEnv("RESEND_FROM_EMAIL", "noreply@example.com"),
 	}
 }

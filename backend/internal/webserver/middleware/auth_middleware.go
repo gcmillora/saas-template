@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"adobo/config"
+	"saas-template/config"
 	"context"
 	"net/http"
 )

@@ -1,9 +1,9 @@
 package handler
 
 import (
-	oapi_public "adobo/generated/oapi/public"
-	"adobo/internal/app/app_service/authentication"
-	"adobo/internal/webserver/middleware"
+	oapi_public "saas-template/generated/oapi/public"
+	"saas-template/internal/app/app_service/authentication"
+	"saas-template/internal/webserver/middleware"
 	"context"
 	"errors"
 	"log/slog"

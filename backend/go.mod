@@ -1,6 +1,6 @@
-module adobo
+module saas-template
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/go-chi/chi/v5 v5.2.2
@@ -13,6 +13,8 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/oapi-codegen/runtime v1.1.2
 	github.com/patrickmn/go-cache v2.1.0+incompatible
+	github.com/resend/resend-go/v2 v2.28.0
+	github.com/supabase-community/storage-go v0.7.0
 	golang.org/x/crypto v0.40.0
 	golang.org/x/time v0.14.0
 )

@@ -1,6 +1,6 @@
 package console
 
-import "adobo/config"
+import "saas-template/config"
 
 type Console struct {
 	app *config.App

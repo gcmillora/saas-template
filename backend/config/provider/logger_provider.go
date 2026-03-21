@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"os"
 )
+
 func NewLoggerProvider(env *EnvProvider) *slog.Logger {
 	level := slog.LevelDebug
 
@@ -16,7 +17,7 @@ func NewLoggerProvider(env *EnvProvider) *slog.Logger {
 	}
 
 	withTextLogger := slog.NewTextHandler(os.Stdout, &loggerOpts)
-	
+
 	slog.SetDefault(slog.New(withTextLogger))
 
 	return slog.New(withTextLogger)

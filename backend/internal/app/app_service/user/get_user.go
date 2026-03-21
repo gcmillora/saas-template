@@ -1,10 +1,10 @@
 package user
 
 import (
-	"adobo/config"
-	"adobo/generated/oapi"
-	"adobo/internal/app/repository"
-	"adobo/internal/webserver/middleware"
+	"saas-template/config"
+	"saas-template/generated/oapi"
+	"saas-template/internal/app/repository"
+	"saas-template/internal/webserver/middleware"
 	"context"
 
 	"github.com/google/uuid"

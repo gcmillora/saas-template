@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"adobo/generated/oapi"
-	"adobo/internal/app/app_service/user"
+	"saas-template/generated/oapi"
+	"saas-template/internal/app/app_service/user"
 	"context"
 )
 
