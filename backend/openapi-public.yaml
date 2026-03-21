@@ -1,19 +1,8 @@
 openapi: 3.0.0
 info:
-  title: "Go Backend Public API"
+  title: "SaaS Template Public API"
   version: "1.0.0"
 paths:
-  /health:
-    get:
-      operationId: get-api-v1-health
-      summary: "Returns a health check response"
-      responses:
-        "200":
-          description: "OK"
-          content:
-            text/plain:
-              schema:
-                type: string
   /signin:
     post:
       operationId: post-api-v1-signin
@@ -38,9 +27,9 @@ paths:
         "200":
           description: "Login successful"
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
+                $ref: "#/components/schemas/MessageResponse"
         "401":
           description: "Invalid credentials"
           content:
@@ -79,9 +68,9 @@ paths:
         "200":
           description: "Signup successful"
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
+                $ref: "#/components/schemas/MessageResponse"
         "400":
           description: "Validation error"
           content:
@@ -96,9 +85,67 @@ paths:
         "200":
           description: "Signout successful"
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
+                $ref: "#/components/schemas/MessageResponse"
+  /forgot-password:
+    post:
+      operationId: post-api-v1-forgot-password
+      summary: "Request a password reset email"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        "200":
+          description: "Request accepted"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+  /reset-password:
+    post:
+      operationId: post-api-v1-reset-password
+      summary: "Reset password using a token"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - password
+                - confirm_password
+              properties:
+                token:
+                  type: string
+                password:
+                  type: string
+                  minLength: 8
+                confirm_password:
+                  type: string
+      responses:
+        "200":
+          description: "Password reset successful"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "400":
+          description: "Validation error or invalid token"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
 components:
   schemas:
     Error:
@@ -106,3 +153,20 @@ components:
       properties:
         message:
           type: string
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+    ValidationError:
+      type: object
+      properties:
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            errors:
+              type: array
+              items:
+                type: string

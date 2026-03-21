@@ -4,6 +4,7 @@
 package oapi
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -17,18 +18,37 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for BaseUserRole.
+const (
+	Admin BaseUserRole = "admin"
+	User  BaseUserRole = "user"
+)
+
 // BaseUser Base user detail
 type BaseUser struct {
-	Email     openapi_types.Email `json:"email"`
-	FirstName *string             `json:"firstName"`
-	Id        openapi_types.UUID  `json:"id"`
-	LastName  *string             `json:"lastName"`
+	Email               openapi_types.Email `json:"email"`
+	FirstName           *string             `json:"firstName"`
+	Id                  openapi_types.UUID  `json:"id"`
+	LastName            *string             `json:"lastName"`
+	OnboardingCompleted bool                `json:"onboardingCompleted"`
+	Role                BaseUserRole        `json:"role"`
 }
+
+// BaseUserRole defines model for BaseUser.Role.
+type BaseUserRole string
 
 // Error defines model for Error.
 type Error struct {
 	Message *string `json:"message,omitempty"`
 }
+
+// UpdateOnboardingRequest defines model for UpdateOnboardingRequest.
+type UpdateOnboardingRequest struct {
+	OnboardingCompleted bool `json:"onboardingCompleted"`
+}
+
+// PatchApiV1UserOnboardingJSONRequestBody defines body for PatchApiV1UserOnboarding for application/json ContentType.
+type PatchApiV1UserOnboardingJSONRequestBody = UpdateOnboardingRequest
 
 // RequestEditorFn  is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -105,10 +125,39 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 type ClientInterface interface {
 	// GetApiV1User request
 	GetApiV1User(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PatchApiV1UserOnboardingWithBody request with any body
+	PatchApiV1UserOnboardingWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PatchApiV1UserOnboarding(ctx context.Context, body PatchApiV1UserOnboardingJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) GetApiV1User(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetApiV1UserRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchApiV1UserOnboardingWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchApiV1UserOnboardingRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchApiV1UserOnboarding(ctx context.Context, body PatchApiV1UserOnboardingJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchApiV1UserOnboardingRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -142,6 +191,46 @@ func NewGetApiV1UserRequest(server string) (*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewPatchApiV1UserOnboardingRequest calls the generic PatchApiV1UserOnboarding builder with application/json body
+func NewPatchApiV1UserOnboardingRequest(server string, body PatchApiV1UserOnboardingJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPatchApiV1UserOnboardingRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPatchApiV1UserOnboardingRequestWithBody generates requests for PatchApiV1UserOnboarding with any type of body
+func NewPatchApiV1UserOnboardingRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/user/onboarding")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PATCH", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -191,6 +280,11 @@ func WithBaseURL(baseURL string) ClientOption {
 type ClientWithResponsesInterface interface {
 	// GetApiV1UserWithResponse request
 	GetApiV1UserWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiV1UserResponse, error)
+
+	// PatchApiV1UserOnboardingWithBodyWithResponse request with any body
+	PatchApiV1UserOnboardingWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchApiV1UserOnboardingResponse, error)
+
+	PatchApiV1UserOnboardingWithResponse(ctx context.Context, body PatchApiV1UserOnboardingJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchApiV1UserOnboardingResponse, error)
 }
 
 type GetApiV1UserResponse struct {
@@ -216,6 +310,28 @@ func (r GetApiV1UserResponse) StatusCode() int {
 	return 0
 }
 
+type PatchApiV1UserOnboardingResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *BaseUser
+}
+
+// Status returns HTTPResponse.Status
+func (r PatchApiV1UserOnboardingResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PatchApiV1UserOnboardingResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 // GetApiV1UserWithResponse request returning *GetApiV1UserResponse
 func (c *ClientWithResponses) GetApiV1UserWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiV1UserResponse, error) {
 	rsp, err := c.GetApiV1User(ctx, reqEditors...)
@@ -223,6 +339,23 @@ func (c *ClientWithResponses) GetApiV1UserWithResponse(ctx context.Context, reqE
 		return nil, err
 	}
 	return ParseGetApiV1UserResponse(rsp)
+}
+
+// PatchApiV1UserOnboardingWithBodyWithResponse request with arbitrary body returning *PatchApiV1UserOnboardingResponse
+func (c *ClientWithResponses) PatchApiV1UserOnboardingWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchApiV1UserOnboardingResponse, error) {
+	rsp, err := c.PatchApiV1UserOnboardingWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchApiV1UserOnboardingResponse(rsp)
+}
+
+func (c *ClientWithResponses) PatchApiV1UserOnboardingWithResponse(ctx context.Context, body PatchApiV1UserOnboardingJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchApiV1UserOnboardingResponse, error) {
+	rsp, err := c.PatchApiV1UserOnboarding(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchApiV1UserOnboardingResponse(rsp)
 }
 
 // ParseGetApiV1UserResponse parses an HTTP response from a GetApiV1UserWithResponse call
@@ -258,11 +391,40 @@ func ParseGetApiV1UserResponse(rsp *http.Response) (*GetApiV1UserResponse, error
 	return response, nil
 }
 
+// ParsePatchApiV1UserOnboardingResponse parses an HTTP response from a PatchApiV1UserOnboardingWithResponse call
+func ParsePatchApiV1UserOnboardingResponse(rsp *http.Response) (*PatchApiV1UserOnboardingResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PatchApiV1UserOnboardingResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest BaseUser
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// Return authenticated user
 	// (GET /user)
 	GetApiV1User(w http.ResponseWriter, r *http.Request)
+	// Update user onboarding preferences
+	// (PATCH /user/onboarding)
+	PatchApiV1UserOnboarding(w http.ResponseWriter, r *http.Request)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -272,6 +434,12 @@ type Unimplemented struct{}
 // Return authenticated user
 // (GET /user)
 func (_ Unimplemented) GetApiV1User(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update user onboarding preferences
+// (PATCH /user/onboarding)
+func (_ Unimplemented) PatchApiV1UserOnboarding(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -289,6 +457,20 @@ func (siw *ServerInterfaceWrapper) GetApiV1User(w http.ResponseWriter, r *http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetApiV1User(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PatchApiV1UserOnboarding operation middleware
+func (siw *ServerInterfaceWrapper) PatchApiV1UserOnboarding(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PatchApiV1UserOnboarding(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -414,6 +596,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/user", wrapper.GetApiV1User)
 	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/user/onboarding", wrapper.PatchApiV1UserOnboarding)
+	})
 
 	return r
 }
@@ -443,11 +628,39 @@ func (response GetApiV1User401JSONResponse) VisitGetApiV1UserResponse(w http.Res
 	return json.NewEncoder(w).Encode(response)
 }
 
+type PatchApiV1UserOnboardingRequestObject struct {
+	Body *PatchApiV1UserOnboardingJSONRequestBody
+}
+
+type PatchApiV1UserOnboardingResponseObject interface {
+	VisitPatchApiV1UserOnboardingResponse(w http.ResponseWriter) error
+}
+
+type PatchApiV1UserOnboarding200JSONResponse BaseUser
+
+func (response PatchApiV1UserOnboarding200JSONResponse) VisitPatchApiV1UserOnboardingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PatchApiV1UserOnboarding401Response struct {
+}
+
+func (response PatchApiV1UserOnboarding401Response) VisitPatchApiV1UserOnboardingResponse(w http.ResponseWriter) error {
+	w.WriteHeader(401)
+	return nil
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// Return authenticated user
 	// (GET /user)
 	GetApiV1User(ctx context.Context, request GetApiV1UserRequestObject) (GetApiV1UserResponseObject, error)
+	// Update user onboarding preferences
+	// (PATCH /user/onboarding)
+	PatchApiV1UserOnboarding(ctx context.Context, request PatchApiV1UserOnboardingRequestObject) (PatchApiV1UserOnboardingResponseObject, error)
 }
 
 type StrictHandlerFunc = strictnethttp.StrictHTTPHandlerFunc
@@ -496,6 +709,37 @@ func (sh *strictHandler) GetApiV1User(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetApiV1UserResponseObject); ok {
 		if err := validResponse.VisitGetApiV1UserResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PatchApiV1UserOnboarding operation middleware
+func (sh *strictHandler) PatchApiV1UserOnboarding(w http.ResponseWriter, r *http.Request) {
+	var request PatchApiV1UserOnboardingRequestObject
+
+	var body PatchApiV1UserOnboardingJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PatchApiV1UserOnboarding(ctx, request.(PatchApiV1UserOnboardingRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PatchApiV1UserOnboarding")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PatchApiV1UserOnboardingResponseObject); ok {
+		if err := validResponse.VisitPatchApiV1UserOnboardingResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

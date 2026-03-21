@@ -1,11 +1,10 @@
 openapi: 3.0.0
 info:
-  title: "Adobo API"
+  title: "SaaS Template API"
   version: "1.0.0"
 servers:
   - url: "http://localhost:4000"
 paths:
-  # Auth-related endpoints
   /user:
     get:
       operationId: get-api-v1-user
@@ -24,55 +23,36 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
-  # TEMPLATE: Add your custom endpoints below
-  # Example endpoint structure:
-  #
-  # /your-resource:
-  #   get:
-  #     operationId: get-api-v1-your-resource
-  #     summary: "Description of your endpoint"
-  #     parameters:
-  #       - name: id
-  #         in: path
-  #         required: true
-  #         description: "Resource ID"
-  #         schema:
-  #           type: string
-  #     requestBody:
-  #       description: "Request payload description"
-  #       content:
-  #         application/json:
-  #           schema:
-  #             $ref: '#/components/schemas/YourSchema'
-  #     responses:
-  #       "200":
-  #         description: "Success response"
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/YourResponseSchema'
-  #       "401":
-  #         description: "Unauthorized"
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/Error'
-  #       "404":
-  #         description: "Not found"
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/Error'
+  /user/onboarding:
+    patch:
+      operationId: patch-api-v1-user-onboarding
+      summary: Update user onboarding preferences
+      tags:
+        - User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOnboardingRequest"
+      responses:
+        "200":
+          description: Onboarding preferences updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BaseUser"
+        "401":
+          description: Unauthorized
+
 components:
   schemas:
-    # Standard error response
     Error:
       type: object
       properties:
         message:
           type: string
 
-    # Auth-related schemas
     BaseUser:
       description: Base user detail
       type: object
@@ -89,39 +69,21 @@ components:
         lastName:
           type: string
           nullable: true
+        role:
+          type: string
+          enum: [admin, user]
+        onboardingCompleted:
+          type: boolean
       required:
         - id
         - email
+        - role
+        - onboardingCompleted
 
-    # TEMPLATE: Add your custom schemas below
-    # Example schema structure:
-    #
-    # YourSchema:
-    #   description: Description of your schema
-    #   type: object
-    #   properties:
-    #     id:
-    #       type: string
-    #       format: uuid
-    #     name:
-    #       type: string
-    #     email:
-    #       type: string
-    #       format: email
-    #     createdAt:
-    #       type: string
-    #       format: date-time
-    #     isActive:
-    #       type: boolean
-    #       default: true
-    #     metadata:
-    #       type: object
-    #       nullable: true
-    #     tags:
-    #       type: array
-    #       items:
-    #         type: string
-    #   required:
-    #     - id
-    #     - name
-    #     - email
+    UpdateOnboardingRequest:
+      type: object
+      required:
+        - onboardingCompleted
+      properties:
+        onboardingCompleted:
+          type: boolean

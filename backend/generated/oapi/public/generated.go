@@ -23,6 +23,31 @@ type Error struct {
 	Message *string `json:"message,omitempty"`
 }
 
+// MessageResponse defines model for MessageResponse.
+type MessageResponse struct {
+	Message *string `json:"message,omitempty"`
+}
+
+// ValidationError defines model for ValidationError.
+type ValidationError struct {
+	Data *struct {
+		Errors *[]string `json:"errors,omitempty"`
+	} `json:"data,omitempty"`
+	Message *string `json:"message,omitempty"`
+}
+
+// PostApiV1ForgotPasswordJSONBody defines parameters for PostApiV1ForgotPassword.
+type PostApiV1ForgotPasswordJSONBody struct {
+	Email openapi_types.Email `json:"email"`
+}
+
+// PostApiV1ResetPasswordJSONBody defines parameters for PostApiV1ResetPassword.
+type PostApiV1ResetPasswordJSONBody struct {
+	ConfirmPassword string `json:"confirm_password"`
+	Password        string `json:"password"`
+	Token           string `json:"token"`
+}
+
 // PostApiV1SigninJSONBody defines parameters for PostApiV1Signin.
 type PostApiV1SigninJSONBody struct {
 	Email    openapi_types.Email `json:"email"`
@@ -37,6 +62,12 @@ type PostApiV1SignupJSONBody struct {
 	LastName        *string             `json:"last_name,omitempty"`
 	Password        string              `json:"password"`
 }
+
+// PostApiV1ForgotPasswordJSONRequestBody defines body for PostApiV1ForgotPassword for application/json ContentType.
+type PostApiV1ForgotPasswordJSONRequestBody PostApiV1ForgotPasswordJSONBody
+
+// PostApiV1ResetPasswordJSONRequestBody defines body for PostApiV1ResetPassword for application/json ContentType.
+type PostApiV1ResetPasswordJSONRequestBody PostApiV1ResetPasswordJSONBody
 
 // PostApiV1SigninJSONRequestBody defines body for PostApiV1Signin for application/json ContentType.
 type PostApiV1SigninJSONRequestBody PostApiV1SigninJSONBody
@@ -117,8 +148,15 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
-	// GetApiV1Health request
-	GetApiV1Health(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// PostApiV1ForgotPasswordWithBody request with any body
+	PostApiV1ForgotPasswordWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostApiV1ForgotPassword(ctx context.Context, body PostApiV1ForgotPasswordJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostApiV1ResetPasswordWithBody request with any body
+	PostApiV1ResetPasswordWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostApiV1ResetPassword(ctx context.Context, body PostApiV1ResetPasswordJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// PostApiV1SigninWithBody request with any body
 	PostApiV1SigninWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -134,8 +172,44 @@ type ClientInterface interface {
 	PostApiV1Signup(ctx context.Context, body PostApiV1SignupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
-func (c *Client) GetApiV1Health(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetApiV1HealthRequest(c.Server)
+func (c *Client) PostApiV1ForgotPasswordWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1ForgotPasswordRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1ForgotPassword(ctx context.Context, body PostApiV1ForgotPasswordJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1ForgotPasswordRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1ResetPasswordWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1ResetPasswordRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1ResetPassword(ctx context.Context, body PostApiV1ResetPasswordJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1ResetPasswordRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -206,8 +280,19 @@ func (c *Client) PostApiV1Signup(ctx context.Context, body PostApiV1SignupJSONRe
 	return c.Client.Do(req)
 }
 
-// NewGetApiV1HealthRequest generates requests for GetApiV1Health
-func NewGetApiV1HealthRequest(server string) (*http.Request, error) {
+// NewPostApiV1ForgotPasswordRequest calls the generic PostApiV1ForgotPassword builder with application/json body
+func NewPostApiV1ForgotPasswordRequest(server string, body PostApiV1ForgotPasswordJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostApiV1ForgotPasswordRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostApiV1ForgotPasswordRequestWithBody generates requests for PostApiV1ForgotPassword with any type of body
+func NewPostApiV1ForgotPasswordRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -215,7 +300,7 @@ func NewGetApiV1HealthRequest(server string) (*http.Request, error) {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/health")
+	operationPath := fmt.Sprintf("/forgot-password")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -225,10 +310,52 @@ func NewGetApiV1HealthRequest(server string) (*http.Request, error) {
 		return nil, err
 	}
 
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	req, err := http.NewRequest("POST", queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewPostApiV1ResetPasswordRequest calls the generic PostApiV1ResetPassword builder with application/json body
+func NewPostApiV1ResetPasswordRequest(server string, body PostApiV1ResetPasswordJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostApiV1ResetPasswordRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostApiV1ResetPasswordRequestWithBody generates requests for PostApiV1ResetPassword with any type of body
+func NewPostApiV1ResetPasswordRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/reset-password")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -383,8 +510,15 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
-	// GetApiV1HealthWithResponse request
-	GetApiV1HealthWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiV1HealthResponse, error)
+	// PostApiV1ForgotPasswordWithBodyWithResponse request with any body
+	PostApiV1ForgotPasswordWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1ForgotPasswordResponse, error)
+
+	PostApiV1ForgotPasswordWithResponse(ctx context.Context, body PostApiV1ForgotPasswordJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1ForgotPasswordResponse, error)
+
+	// PostApiV1ResetPasswordWithBodyWithResponse request with any body
+	PostApiV1ResetPasswordWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1ResetPasswordResponse, error)
+
+	PostApiV1ResetPasswordWithResponse(ctx context.Context, body PostApiV1ResetPasswordJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1ResetPasswordResponse, error)
 
 	// PostApiV1SigninWithBodyWithResponse request with any body
 	PostApiV1SigninWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1SigninResponse, error)
@@ -400,13 +534,14 @@ type ClientWithResponsesInterface interface {
 	PostApiV1SignupWithResponse(ctx context.Context, body PostApiV1SignupJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1SignupResponse, error)
 }
 
-type GetApiV1HealthResponse struct {
+type PostApiV1ForgotPasswordResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *MessageResponse
 }
 
 // Status returns HTTPResponse.Status
-func (r GetApiV1HealthResponse) Status() string {
+func (r PostApiV1ForgotPasswordResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -414,7 +549,30 @@ func (r GetApiV1HealthResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetApiV1HealthResponse) StatusCode() int {
+func (r PostApiV1ForgotPasswordResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostApiV1ResetPasswordResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *MessageResponse
+	JSON400      *ValidationError
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiV1ResetPasswordResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiV1ResetPasswordResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -424,6 +582,7 @@ func (r GetApiV1HealthResponse) StatusCode() int {
 type PostApiV1SigninResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *MessageResponse
 	JSON401      *Error
 }
 
@@ -446,6 +605,7 @@ func (r PostApiV1SigninResponse) StatusCode() int {
 type PostApiV1SignoutResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *MessageResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -467,6 +627,7 @@ func (r PostApiV1SignoutResponse) StatusCode() int {
 type PostApiV1SignupResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *MessageResponse
 	JSON400      *Error
 }
 
@@ -486,13 +647,38 @@ func (r PostApiV1SignupResponse) StatusCode() int {
 	return 0
 }
 
-// GetApiV1HealthWithResponse request returning *GetApiV1HealthResponse
-func (c *ClientWithResponses) GetApiV1HealthWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiV1HealthResponse, error) {
-	rsp, err := c.GetApiV1Health(ctx, reqEditors...)
+// PostApiV1ForgotPasswordWithBodyWithResponse request with arbitrary body returning *PostApiV1ForgotPasswordResponse
+func (c *ClientWithResponses) PostApiV1ForgotPasswordWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1ForgotPasswordResponse, error) {
+	rsp, err := c.PostApiV1ForgotPasswordWithBody(ctx, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetApiV1HealthResponse(rsp)
+	return ParsePostApiV1ForgotPasswordResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostApiV1ForgotPasswordWithResponse(ctx context.Context, body PostApiV1ForgotPasswordJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1ForgotPasswordResponse, error) {
+	rsp, err := c.PostApiV1ForgotPassword(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1ForgotPasswordResponse(rsp)
+}
+
+// PostApiV1ResetPasswordWithBodyWithResponse request with arbitrary body returning *PostApiV1ResetPasswordResponse
+func (c *ClientWithResponses) PostApiV1ResetPasswordWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1ResetPasswordResponse, error) {
+	rsp, err := c.PostApiV1ResetPasswordWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1ResetPasswordResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostApiV1ResetPasswordWithResponse(ctx context.Context, body PostApiV1ResetPasswordJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1ResetPasswordResponse, error) {
+	rsp, err := c.PostApiV1ResetPassword(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1ResetPasswordResponse(rsp)
 }
 
 // PostApiV1SigninWithBodyWithResponse request with arbitrary body returning *PostApiV1SigninResponse
@@ -538,17 +724,60 @@ func (c *ClientWithResponses) PostApiV1SignupWithResponse(ctx context.Context, b
 	return ParsePostApiV1SignupResponse(rsp)
 }
 
-// ParseGetApiV1HealthResponse parses an HTTP response from a GetApiV1HealthWithResponse call
-func ParseGetApiV1HealthResponse(rsp *http.Response) (*GetApiV1HealthResponse, error) {
+// ParsePostApiV1ForgotPasswordResponse parses an HTTP response from a PostApiV1ForgotPasswordWithResponse call
+func ParsePostApiV1ForgotPasswordResponse(rsp *http.Response) (*PostApiV1ForgotPasswordResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetApiV1HealthResponse{
+	response := &PostApiV1ForgotPasswordResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest MessageResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostApiV1ResetPasswordResponse parses an HTTP response from a PostApiV1ResetPasswordWithResponse call
+func ParsePostApiV1ResetPasswordResponse(rsp *http.Response) (*PostApiV1ResetPasswordResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiV1ResetPasswordResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest MessageResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ValidationError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
 	}
 
 	return response, nil
@@ -568,6 +797,13 @@ func ParsePostApiV1SigninResponse(rsp *http.Response) (*PostApiV1SigninResponse,
 	}
 
 	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest MessageResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -593,6 +829,16 @@ func ParsePostApiV1SignoutResponse(rsp *http.Response) (*PostApiV1SignoutRespons
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest MessageResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -610,6 +856,13 @@ func ParsePostApiV1SignupResponse(rsp *http.Response) (*PostApiV1SignupResponse,
 	}
 
 	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest MessageResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -624,9 +877,12 @@ func ParsePostApiV1SignupResponse(rsp *http.Response) (*PostApiV1SignupResponse,
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// Returns a health check response
-	// (GET /health)
-	GetApiV1Health(w http.ResponseWriter, r *http.Request)
+	// Request a password reset email
+	// (POST /forgot-password)
+	PostApiV1ForgotPassword(w http.ResponseWriter, r *http.Request)
+	// Reset password using a token
+	// (POST /reset-password)
+	PostApiV1ResetPassword(w http.ResponseWriter, r *http.Request)
 	// Logs in a user and returns a session cookie
 	// (POST /signin)
 	PostApiV1Signin(w http.ResponseWriter, r *http.Request)
@@ -642,9 +898,15 @@ type ServerInterface interface {
 
 type Unimplemented struct{}
 
-// Returns a health check response
-// (GET /health)
-func (_ Unimplemented) GetApiV1Health(w http.ResponseWriter, r *http.Request) {
+// Request a password reset email
+// (POST /forgot-password)
+func (_ Unimplemented) PostApiV1ForgotPassword(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Reset password using a token
+// (POST /reset-password)
+func (_ Unimplemented) PostApiV1ResetPassword(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -675,11 +937,25 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(http.Handler) http.Handler
 
-// GetApiV1Health operation middleware
-func (siw *ServerInterfaceWrapper) GetApiV1Health(w http.ResponseWriter, r *http.Request) {
+// PostApiV1ForgotPassword operation middleware
+func (siw *ServerInterfaceWrapper) PostApiV1ForgotPassword(w http.ResponseWriter, r *http.Request) {
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetApiV1Health(w, r)
+		siw.Handler.PostApiV1ForgotPassword(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PostApiV1ResetPassword operation middleware
+func (siw *ServerInterfaceWrapper) PostApiV1ResetPassword(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostApiV1ResetPassword(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -845,7 +1121,10 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/health", wrapper.GetApiV1Health)
+		r.Post(options.BaseURL+"/forgot-password", wrapper.PostApiV1ForgotPassword)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/reset-password", wrapper.PostApiV1ResetPassword)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/signin", wrapper.PostApiV1Signin)
@@ -860,21 +1139,47 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	return r
 }
 
-type GetApiV1HealthRequestObject struct {
+type PostApiV1ForgotPasswordRequestObject struct {
+	Body *PostApiV1ForgotPasswordJSONRequestBody
 }
 
-type GetApiV1HealthResponseObject interface {
-	VisitGetApiV1HealthResponse(w http.ResponseWriter) error
+type PostApiV1ForgotPasswordResponseObject interface {
+	VisitPostApiV1ForgotPasswordResponse(w http.ResponseWriter) error
 }
 
-type GetApiV1Health200TextResponse string
+type PostApiV1ForgotPassword200JSONResponse MessageResponse
 
-func (response GetApiV1Health200TextResponse) VisitGetApiV1HealthResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "text/plain")
+func (response PostApiV1ForgotPassword200JSONResponse) VisitPostApiV1ForgotPasswordResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 
-	_, err := w.Write([]byte(response))
-	return err
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostApiV1ResetPasswordRequestObject struct {
+	Body *PostApiV1ResetPasswordJSONRequestBody
+}
+
+type PostApiV1ResetPasswordResponseObject interface {
+	VisitPostApiV1ResetPasswordResponse(w http.ResponseWriter) error
+}
+
+type PostApiV1ResetPassword200JSONResponse MessageResponse
+
+func (response PostApiV1ResetPassword200JSONResponse) VisitPostApiV1ResetPasswordResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostApiV1ResetPassword400JSONResponse ValidationError
+
+func (response PostApiV1ResetPassword400JSONResponse) VisitPostApiV1ResetPasswordResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type PostApiV1SigninRequestObject struct {
@@ -885,14 +1190,13 @@ type PostApiV1SigninResponseObject interface {
 	VisitPostApiV1SigninResponse(w http.ResponseWriter) error
 }
 
-type PostApiV1Signin200TextResponse string
+type PostApiV1Signin200JSONResponse MessageResponse
 
-func (response PostApiV1Signin200TextResponse) VisitPostApiV1SigninResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "text/plain")
+func (response PostApiV1Signin200JSONResponse) VisitPostApiV1SigninResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 
-	_, err := w.Write([]byte(response))
-	return err
+	return json.NewEncoder(w).Encode(response)
 }
 
 type PostApiV1Signin401JSONResponse Error
@@ -911,14 +1215,13 @@ type PostApiV1SignoutResponseObject interface {
 	VisitPostApiV1SignoutResponse(w http.ResponseWriter) error
 }
 
-type PostApiV1Signout200TextResponse string
+type PostApiV1Signout200JSONResponse MessageResponse
 
-func (response PostApiV1Signout200TextResponse) VisitPostApiV1SignoutResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "text/plain")
+func (response PostApiV1Signout200JSONResponse) VisitPostApiV1SignoutResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 
-	_, err := w.Write([]byte(response))
-	return err
+	return json.NewEncoder(w).Encode(response)
 }
 
 type PostApiV1SignupRequestObject struct {
@@ -929,14 +1232,13 @@ type PostApiV1SignupResponseObject interface {
 	VisitPostApiV1SignupResponse(w http.ResponseWriter) error
 }
 
-type PostApiV1Signup200TextResponse string
+type PostApiV1Signup200JSONResponse MessageResponse
 
-func (response PostApiV1Signup200TextResponse) VisitPostApiV1SignupResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "text/plain")
+func (response PostApiV1Signup200JSONResponse) VisitPostApiV1SignupResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 
-	_, err := w.Write([]byte(response))
-	return err
+	return json.NewEncoder(w).Encode(response)
 }
 
 type PostApiV1Signup400JSONResponse Error
@@ -950,9 +1252,12 @@ func (response PostApiV1Signup400JSONResponse) VisitPostApiV1SignupResponse(w ht
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
-	// Returns a health check response
-	// (GET /health)
-	GetApiV1Health(ctx context.Context, request GetApiV1HealthRequestObject) (GetApiV1HealthResponseObject, error)
+	// Request a password reset email
+	// (POST /forgot-password)
+	PostApiV1ForgotPassword(ctx context.Context, request PostApiV1ForgotPasswordRequestObject) (PostApiV1ForgotPasswordResponseObject, error)
+	// Reset password using a token
+	// (POST /reset-password)
+	PostApiV1ResetPassword(ctx context.Context, request PostApiV1ResetPasswordRequestObject) (PostApiV1ResetPasswordResponseObject, error)
 	// Logs in a user and returns a session cookie
 	// (POST /signin)
 	PostApiV1Signin(ctx context.Context, request PostApiV1SigninRequestObject) (PostApiV1SigninResponseObject, error)
@@ -993,23 +1298,61 @@ type strictHandler struct {
 	options     StrictHTTPServerOptions
 }
 
-// GetApiV1Health operation middleware
-func (sh *strictHandler) GetApiV1Health(w http.ResponseWriter, r *http.Request) {
-	var request GetApiV1HealthRequestObject
+// PostApiV1ForgotPassword operation middleware
+func (sh *strictHandler) PostApiV1ForgotPassword(w http.ResponseWriter, r *http.Request) {
+	var request PostApiV1ForgotPasswordRequestObject
+
+	var body PostApiV1ForgotPasswordJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.GetApiV1Health(ctx, request.(GetApiV1HealthRequestObject))
+		return sh.ssi.PostApiV1ForgotPassword(ctx, request.(PostApiV1ForgotPasswordRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetApiV1Health")
+		handler = middleware(handler, "PostApiV1ForgotPassword")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GetApiV1HealthResponseObject); ok {
-		if err := validResponse.VisitGetApiV1HealthResponse(w); err != nil {
+	} else if validResponse, ok := response.(PostApiV1ForgotPasswordResponseObject); ok {
+		if err := validResponse.VisitPostApiV1ForgotPasswordResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PostApiV1ResetPassword operation middleware
+func (sh *strictHandler) PostApiV1ResetPassword(w http.ResponseWriter, r *http.Request) {
+	var request PostApiV1ResetPasswordRequestObject
+
+	var body PostApiV1ResetPasswordJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PostApiV1ResetPassword(ctx, request.(PostApiV1ResetPasswordRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostApiV1ResetPassword")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PostApiV1ResetPasswordResponseObject); ok {
+		if err := validResponse.VisitPostApiV1ResetPasswordResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
