@@ -16,6 +16,8 @@ CREATE TABLE user_tbl (
     last_name VARCHAR(255),
     auth_provider VARCHAR(50) NOT NULL DEFAULT 'email',
     auth_provider_id VARCHAR(255),
+    role VARCHAR(50) NOT NULL DEFAULT 'user',
+    onboarding_completed BOOLEAN NOT NULL DEFAULT FALSE,
     tenant_id UUID NOT NULL REFERENCES tenant_tbl(id),
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()

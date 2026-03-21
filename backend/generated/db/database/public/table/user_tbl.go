@@ -17,16 +17,18 @@ type userTblTable struct {
 	postgres.Table
 
 	// Columns
-	ID             postgres.ColumnString
-	Email          postgres.ColumnString
-	PasswordHash   postgres.ColumnString
-	FirstName      postgres.ColumnString
-	LastName       postgres.ColumnString
-	AuthProvider   postgres.ColumnString
-	AuthProviderID postgres.ColumnString
-	TenantID       postgres.ColumnString
-	CreatedAt      postgres.ColumnTimestamp
-	UpdatedAt      postgres.ColumnTimestamp
+	ID                  postgres.ColumnString
+	Email               postgres.ColumnString
+	PasswordHash        postgres.ColumnString
+	FirstName           postgres.ColumnString
+	LastName            postgres.ColumnString
+	AuthProvider        postgres.ColumnString
+	AuthProviderID      postgres.ColumnString
+	Role                postgres.ColumnString
+	OnboardingCompleted postgres.ColumnBool
+	TenantID            postgres.ColumnString
+	CreatedAt           postgres.ColumnTimestamp
+	UpdatedAt           postgres.ColumnTimestamp
 
 	AllColumns     postgres.ColumnList
 	MutableColumns postgres.ColumnList
@@ -68,35 +70,39 @@ func newUserTblTable(schemaName, tableName, alias string) *UserTblTable {
 
 func newUserTblTableImpl(schemaName, tableName, alias string) userTblTable {
 	var (
-		IDColumn             = postgres.StringColumn("id")
-		EmailColumn          = postgres.StringColumn("email")
-		PasswordHashColumn   = postgres.StringColumn("password_hash")
-		FirstNameColumn      = postgres.StringColumn("first_name")
-		LastNameColumn       = postgres.StringColumn("last_name")
-		AuthProviderColumn   = postgres.StringColumn("auth_provider")
-		AuthProviderIDColumn = postgres.StringColumn("auth_provider_id")
-		TenantIDColumn       = postgres.StringColumn("tenant_id")
-		CreatedAtColumn      = postgres.TimestampColumn("created_at")
-		UpdatedAtColumn      = postgres.TimestampColumn("updated_at")
-		allColumns           = postgres.ColumnList{IDColumn, EmailColumn, PasswordHashColumn, FirstNameColumn, LastNameColumn, AuthProviderColumn, AuthProviderIDColumn, TenantIDColumn, CreatedAtColumn, UpdatedAtColumn}
-		mutableColumns       = postgres.ColumnList{EmailColumn, PasswordHashColumn, FirstNameColumn, LastNameColumn, AuthProviderColumn, AuthProviderIDColumn, TenantIDColumn, CreatedAtColumn, UpdatedAtColumn}
-		defaultColumns       = postgres.ColumnList{IDColumn, AuthProviderColumn, CreatedAtColumn, UpdatedAtColumn}
+		IDColumn                  = postgres.StringColumn("id")
+		EmailColumn               = postgres.StringColumn("email")
+		PasswordHashColumn        = postgres.StringColumn("password_hash")
+		FirstNameColumn           = postgres.StringColumn("first_name")
+		LastNameColumn            = postgres.StringColumn("last_name")
+		AuthProviderColumn        = postgres.StringColumn("auth_provider")
+		AuthProviderIDColumn      = postgres.StringColumn("auth_provider_id")
+		RoleColumn                = postgres.StringColumn("role")
+		OnboardingCompletedColumn = postgres.BoolColumn("onboarding_completed")
+		TenantIDColumn            = postgres.StringColumn("tenant_id")
+		CreatedAtColumn           = postgres.TimestampColumn("created_at")
+		UpdatedAtColumn           = postgres.TimestampColumn("updated_at")
+		allColumns                = postgres.ColumnList{IDColumn, EmailColumn, PasswordHashColumn, FirstNameColumn, LastNameColumn, AuthProviderColumn, AuthProviderIDColumn, RoleColumn, OnboardingCompletedColumn, TenantIDColumn, CreatedAtColumn, UpdatedAtColumn}
+		mutableColumns            = postgres.ColumnList{EmailColumn, PasswordHashColumn, FirstNameColumn, LastNameColumn, AuthProviderColumn, AuthProviderIDColumn, RoleColumn, OnboardingCompletedColumn, TenantIDColumn, CreatedAtColumn, UpdatedAtColumn}
+		defaultColumns            = postgres.ColumnList{IDColumn, AuthProviderColumn, RoleColumn, OnboardingCompletedColumn, CreatedAtColumn, UpdatedAtColumn}
 	)
 
 	return userTblTable{
 		Table: postgres.NewTable(schemaName, tableName, alias, allColumns...),
 
 		//Columns
-		ID:             IDColumn,
-		Email:          EmailColumn,
-		PasswordHash:   PasswordHashColumn,
-		FirstName:      FirstNameColumn,
-		LastName:       LastNameColumn,
-		AuthProvider:   AuthProviderColumn,
-		AuthProviderID: AuthProviderIDColumn,
-		TenantID:       TenantIDColumn,
-		CreatedAt:      CreatedAtColumn,
-		UpdatedAt:      UpdatedAtColumn,
+		ID:                  IDColumn,
+		Email:               EmailColumn,
+		PasswordHash:        PasswordHashColumn,
+		FirstName:           FirstNameColumn,
+		LastName:            LastNameColumn,
+		AuthProvider:        AuthProviderColumn,
+		AuthProviderID:      AuthProviderIDColumn,
+		Role:                RoleColumn,
+		OnboardingCompleted: OnboardingCompletedColumn,
+		TenantID:            TenantIDColumn,
+		CreatedAt:           CreatedAtColumn,
+		UpdatedAt:           UpdatedAtColumn,
 
 		AllColumns:     allColumns,
 		MutableColumns: mutableColumns,

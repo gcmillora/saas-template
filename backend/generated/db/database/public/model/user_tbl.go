@@ -13,14 +13,16 @@ import (
 )
 
 type UserTbl struct {
-	ID             uuid.UUID `sql:"primary_key"`
-	Email          string
-	PasswordHash   *string
-	FirstName      *string
-	LastName       *string
-	AuthProvider   string
-	AuthProviderID *string
-	TenantID       uuid.UUID
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
+	ID                  uuid.UUID `sql:"primary_key"`
+	Email               string
+	PasswordHash        *string
+	FirstName           *string
+	LastName            *string
+	AuthProvider        string
+	AuthProviderID      *string
+	Role                string
+	OnboardingCompleted bool
+	TenantID            uuid.UUID
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
 }
