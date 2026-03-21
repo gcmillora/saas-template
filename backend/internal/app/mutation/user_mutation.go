@@ -58,3 +58,48 @@ func DeleteUser(
 
 	return err
 }
+
+func UpdateUserPassword(
+	ctx context.Context,
+	db qrm.DB,
+	userID uuid.UUID,
+	passwordHash string,
+) error {
+	utbl := table.UserTbl
+	now := time.Now()
+
+	stmt := utbl.UPDATE(utbl.PasswordHash, utbl.UpdatedAt).
+		SET(passwordHash, now).
+		WHERE(utbl.ID.EQ(pg.UUID(userID)))
+
+	_, err := stmt.ExecContext(ctx, db)
+	return err
+}
+
+func UpdateUserOnboarding(
+	ctx context.Context,
+	db qrm.DB,
+	userID uuid.UUID,
+	tenantID uuid.UUID,
+	onboardingCompleted bool,
+) (model.UserTbl, error) {
+	utbl := table.UserTbl
+	now := time.Now()
+
+	var dest model.UserTbl
+	stmt := utbl.UPDATE(
+		utbl.OnboardingCompleted,
+		utbl.UpdatedAt,
+	).SET(
+		onboardingCompleted,
+		now,
+	).WHERE(
+		pg.AND(
+			utbl.ID.EQ(pg.UUID(userID)),
+			utbl.TenantID.EQ(pg.UUID(tenantID)),
+		),
+	).RETURNING(utbl.AllColumns)
+
+	err := stmt.QueryContext(ctx, db, &dest)
+	return dest, err
+}
