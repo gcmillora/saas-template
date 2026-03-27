@@ -9,6 +9,9 @@ export default defineConfig({
       httpClient: "fetch",
       mode: "single",
       override: {
+        fetch: {
+          includeHttpResponseReturnType: false,
+        },
         mutator: {
           path: "./src/services/api/axios-v1.ts",
           name: "customInstance",
@@ -24,8 +27,29 @@ export default defineConfig({
       httpClient: "fetch",
       mode: "single",
       override: {
+        fetch: {
+          includeHttpResponseReturnType: false,
+        },
         mutator: {
           path: "./src/services/api/axios-v1-public.ts",
+          name: "customInstance",
+        },
+      },
+    },
+  },
+  v1Admin: {
+    input: "../backend/openapi-admin.yaml",
+    output: {
+      target: "./src/services/api/v1-admin.ts",
+      client: "react-query",
+      httpClient: "fetch",
+      mode: "single",
+      override: {
+        fetch: {
+          includeHttpResponseReturnType: false,
+        },
+        mutator: {
+          path: "./src/services/api/axios-v1-admin.ts",
           name: "customInstance",
         },
       },
