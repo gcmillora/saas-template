@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"saas-template/config"
+	"saas-template/internal/app/app_service/audit"
 	"saas-template/internal/app/mutation"
 	"saas-template/internal/app/repository"
 	"saas-template/internal/app/util_service/password"
@@ -59,5 +60,6 @@ func ResetPassword(
 		_ = err
 	}
 
+	audit.Log(ctx, app, "password_reset_complete", &resetRecord.UserID, nil, nil)
 	return nil, nil
 }

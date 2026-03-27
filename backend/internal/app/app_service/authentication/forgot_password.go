@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"saas-template/config"
 	"saas-template/generated/db/database/public/model"
+	"saas-template/internal/app/app_service/audit"
 	"saas-template/internal/app/mutation"
 	"saas-template/internal/app/repository"
 	"saas-template/internal/app/util_service/email"
@@ -59,4 +60,6 @@ func ForgotPassword(ctx context.Context, app *config.App, emailAddr string) {
 	} else {
 		slog.Default().Info("password reset email skipped (no RESEND_API_KEY)", "url", resetURL)
 	}
+
+	audit.Log(ctx, app, "password_reset_request", &user.ID, &user.TenantID, nil)
 }

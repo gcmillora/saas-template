@@ -5,6 +5,7 @@ import (
 	"errors"
 	"saas-template/config"
 	"saas-template/generated/db/database/public/model"
+	"saas-template/internal/app/app_service/audit"
 	"saas-template/internal/app/mutation"
 	"saas-template/internal/app/repository"
 	"saas-template/internal/app/util_service/password"
@@ -64,5 +65,6 @@ func SignUp(ctx context.Context, app *config.App, body PostSignupBody) (*model.U
 		return nil, err
 	}
 
+	audit.Log(ctx, app, "signup", &created.ID, &created.TenantID, nil)
 	return created, nil
 }
