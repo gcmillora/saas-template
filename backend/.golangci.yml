@@ -10,11 +10,11 @@ linters:
       - std-error-handling
   settings:
     gocritic:
-      disable-checks:
+      disabled-checks:
         - ifElseChain
-  formatters:
-    enable:
-      - goimports
-      - golines
-    exclusions:
-      warn-unused: true
+formatters:
+  enable:
+    - goimports
+    - golines
+  exclusions:
+    warn-unused: true
