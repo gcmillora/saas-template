@@ -1,0 +1,24 @@
+openapi: 3.0.0
+info:
+  title: "SaaS Template Admin API"
+  version: "1.0.0"
+paths:
+  /health:
+    get:
+      operationId: get-api-admin-v1-health
+      summary: "Admin health check"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+components:
+  schemas:
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string

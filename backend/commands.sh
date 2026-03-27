@@ -82,6 +82,9 @@ case "${1}" in
   echo -e "${GREEN}Generating OpenAPI public code...${NC}"
   go tool oapi-codegen -config ./generated/oapi/public/codegen.yaml ./openapi-public.yaml
 
+  echo -e "${GREEN}Generating OpenAPI admin code...${NC}"
+  go tool oapi-codegen -config ./generated/oapi/admin/codegen.yaml ./openapi-admin.yaml
+
   echo -e "${GREEN}Finished generating OpenAPI code...${NC}"
   echo -e "${GREEN}Generating frontend types with Orval..."
   cd ../frontend && bunx orval && cd ../backend
@@ -126,7 +129,14 @@ case "${1}" in
 
   echo 'Autogenerating DB models'
   use_env "local"
-  go tool jet -dsn="$DATABASE_URL" -schema=public -path=./generated/db
+  go tool jet -dsn="$DATABASE_URL" -schema=public -path=./generated/db -ignore-tables=goose_db_version
+
+  # Rename generated directory from actual db name to 'database' for consistent import paths
+  ACTUAL_DB=$(echo "$DATABASE_URL" | sed -n 's|.*/\([^?]*\).*|\1|p')
+  if [ "$ACTUAL_DB" != "database" ] && [ -d "./generated/db/$ACTUAL_DB" ]; then
+    rm -rf ./generated/db/database
+    mv "./generated/db/$ACTUAL_DB" ./generated/db/database
+  fi
 
   show_divider
 
@@ -146,7 +156,14 @@ case "${1}" in
 
   echo 'Autogenerating DB models'
   use_env "local"
-  go tool jet -dsn="$DATABASE_URL" -schema=public -path=./generated/db
+  go tool jet -dsn="$DATABASE_URL" -schema=public -path=./generated/db -ignore-tables=goose_db_version
+
+  # Rename generated directory from actual db name to 'database' for consistent import paths
+  ACTUAL_DB=$(echo "$DATABASE_URL" | sed -n 's|.*/\([^?]*\).*|\1|p')
+  if [ "$ACTUAL_DB" != "database" ] && [ -d "./generated/db/$ACTUAL_DB" ]; then
+    rm -rf ./generated/db/database
+    mv "./generated/db/$ACTUAL_DB" ./generated/db/database
+  fi
 
   show_divider
 
@@ -170,4 +187,3 @@ case "${1}" in
   ;;
 
 esac
-

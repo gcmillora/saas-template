@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"saas-template/config"
 	"saas-template/generated/oapi"
+	oapi_admin "saas-template/generated/oapi/admin"
 	oapi_public "saas-template/generated/oapi/public"
 	"saas-template/internal/webserver/handler"
 	"saas-template/internal/webserver/middleware"
@@ -49,7 +50,7 @@ func NewWebserver(app *config.App) *Webserver {
 	})
 
 	// Public API routes (rate limited)
-	authRateLimiter := middleware.NewRateLimiter(1, 5) // 1 req/sec, burst of 5
+	authRateLimiter := middleware.NewRateLimiter(1, 5)
 	r.Group(func(r chi.Router) {
 		r.Use(authRateLimiter.Middleware())
 		r.Use(middleware.NewContextInjectorMiddleware())
@@ -67,8 +68,10 @@ func NewWebserver(app *config.App) *Webserver {
 		oapi_public.HandlerFromMuxWithBaseURL(strictHandler, r, baseURL)
 	})
 
-	// Authenticated API routes
+	// Authenticated API routes (rate limited)
+	apiRateLimiter := middleware.NewRateLimiter(10, 20)
 	r.Group(func(r chi.Router) {
+		r.Use(apiRateLimiter.Middleware())
 		r.Use(middleware.NewContextInjectorMiddleware())
 		r.Use(middleware.NewAuthMiddleware(app))
 		baseURL := "/api/v1"
@@ -83,6 +86,27 @@ func NewWebserver(app *config.App) *Webserver {
 			},
 		)
 		oapi.HandlerFromMuxWithBaseURL(strictHandler, r, baseURL)
+	})
+
+	// Admin API routes (rate limited, authenticated + admin role required)
+	adminRateLimiter := middleware.NewRateLimiter(5, 10)
+	r.Group(func(r chi.Router) {
+		r.Use(adminRateLimiter.Middleware())
+		r.Use(middleware.NewContextInjectorMiddleware())
+		r.Use(middleware.NewAuthMiddleware(app))
+		r.Use(middleware.NewAdminMiddleware(app))
+		baseURL := "/api/admin/v1"
+		strictHandler := oapi_admin.NewStrictHandlerWithOptions(
+			handler,
+			[]oapi_admin.StrictMiddlewareFunc{},
+			oapi_admin.StrictHTTPServerOptions{
+				RequestErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+				},
+				ResponseErrorHandlerFunc: middleware.HandleErrorWithLog(app),
+			},
+		)
+		oapi_admin.HandlerFromMuxWithBaseURL(strictHandler, r, baseURL)
 	})
 
 	return &Webserver{
