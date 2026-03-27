@@ -1,17 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { usePostApiV1Signin } from "@/services/api/v1-public";
+import { Loader2 } from "lucide-react";
 
 export function SignIn() {
   const [email, setEmail] = useState("");
@@ -32,54 +25,41 @@ export function SignIn() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Sign In</CardTitle>
-          <CardDescription>
-            Enter your email and password to sign in to your account
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
+    <div className="flex min-h-screen">
+      <div className="flex w-full items-center justify-center px-6 py-12 lg:w-1/2 lg:shrink-0">
+        <div className="w-full max-w-sm">
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Welcome back</h1>
+            <p className="mt-1.5 text-sm text-muted-foreground">Sign in to your account to continue</p>
+          </div>
+          <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <p className="text-sm text-destructive">{error}</p>
+              <div className="rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">{error}</div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="name@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+              <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+              <Input id="email" type="email" placeholder="name@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required className="h-11" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password" className="text-sm font-medium">Password</Label>
+                <Link to="/forgot-password" className="text-xs text-muted-foreground transition-colors hover:text-primary">Forgot password?</Link>
+              </div>
+              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="h-11" />
             </div>
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full" disabled={signin.isPending}>
-              {signin.isPending ? "Signing in..." : "Sign In"}
+            <Button type="submit" className="h-11 w-full text-sm font-medium" disabled={signin.isPending}>
+              {signin.isPending ? (<><Loader2 className="mr-2 size-4 animate-spin" />Signing in...</>) : ("Sign In")}
             </Button>
-            <p className="text-center text-sm text-muted-foreground">
-              Don't have an account?{" "}
-              <Link to="/signup" className="underline underline-offset-4 hover:text-primary">
-                Sign up
-              </Link>
-            </p>
-          </CardFooter>
-        </form>
-      </Card>
+          </form>
+          <p className="mt-8 text-center text-sm text-muted-foreground">
+            Don't have an account?{" "}
+            <Link to="/signup" className="font-medium text-primary transition-colors hover:text-primary/80">Create one</Link>
+          </p>
+        </div>
+      </div>
+      <div className="hidden lg:flex lg:w-1/2 lg:items-center lg:justify-center bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5">
+        <div className="h-64 w-64 rounded-full bg-primary/5" />
+      </div>
     </div>
   );
 }
