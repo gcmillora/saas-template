@@ -1,6 +1,6 @@
 import { createContext, type JSX, type PropsWithChildren } from "react";
+import { Navigate } from "react-router";
 import { useGetApiV1User, type BaseUser } from "../services/api/v1";
-import { UnauthorizedRoutes } from "../Routes";
 
 export type AuthContextInterface = {
   user: BaseUser | null;
@@ -9,35 +9,16 @@ export type AuthContextInterface = {
 export const AuthContext = createContext<AuthContextInterface>({ user: null });
 
 export const AuthContextProvider = (props: PropsWithChildren): JSX.Element => {
-  const { data, error, isLoading } = useGetApiV1User();
+  const { data, error, isLoading } = useGetApiV1User({ query: { retry: false } });
 
-  if (
-    Object.values(UnauthorizedRoutes).includes(
-      window.location.pathname as UnauthorizedRoutes,
-    )
-  ) {
-    return (
-      <AuthContext.Provider
-        value={{
-          user: null,
-        }}
-      >
-        {props.children}
-      </AuthContext.Provider>
-    );
-  }
-
-  // biome-ignore lint/complexity/noUselessFragments: ignore
   if (isLoading) return <></>;
 
   if (error) {
-    window.location.replace("/signin");
-    return <></>;
+    return <Navigate to="/signin" replace />;
   }
 
-  const user = data?.status === 200 ? data.data : null;
   const authCtx: AuthContextInterface = {
-    user: user ?? null,
+    user: data ?? null,
   };
 
   return (
