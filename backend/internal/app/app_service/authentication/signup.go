@@ -32,7 +32,7 @@ func SignUp(ctx context.Context, app *config.App, body PostSignupBody) (*model.U
 
 	existing, _ := repository.GetUserByEmail(ctx, app.DB(), body.Email)
 	if existing != nil {
-		return nil, errors.New("a user with this email already exists")
+		return nil, errors.New("unable to create account")
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(body.Password), bcrypt.DefaultCost)

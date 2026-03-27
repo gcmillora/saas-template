@@ -36,7 +36,7 @@ func HandleErrorWithLog(app *config.App) func(w http.ResponseWriter, r *http.Req
 		ctx := r.Context()
 		slog.Default().ErrorContext(ctx, err.Error())
 		
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
 
 	return fn
