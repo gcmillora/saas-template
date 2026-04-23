@@ -1,6 +1,6 @@
 services:
   backend:
-    image: ghcr.io/your-org/saas-backend:latest
+    image: ghcr.io/your-org/saas-template-backend:latest
     container_name: saas-backend
     restart: unless-stopped
     networks:
@@ -43,7 +43,7 @@ services:
         max-file: "3"
 
   frontend:
-    image: ghcr.io/your-org/saas-frontend:latest
+    image: ghcr.io/your-org/saas-template-frontend:latest
     container_name: saas-frontend
     restart: unless-stopped
     networks:

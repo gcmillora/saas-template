@@ -1,0 +1,129 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  APP_NAME: saas-template
+
+jobs:
+  build:
+    name: Build ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - image: backend
+            context: ./backend
+          - image: frontend
+            context: ./frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set short SHA
+        run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.APP_NAME }}-${{ matrix.image }}:${{ env.SHORT_SHA }}
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.APP_NAME }}-${{ matrix.image }}:latest
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync config files
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "docker-compose.prod.yml,nginx/nginx.conf"
+          target: ~/saas-template
+          overwrite: true
+
+      - name: Pull, restart, and verify
+        uses: appleboy/ssh-action@v1
+        env:
+          APP_BASE_URL: ${{ secrets.APP_BASE_URL }}
+          APP_SECRET: ${{ secrets.APP_SECRET }}
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GITHUB_CLIENT_ID: ${{ secrets.GITHUB_CLIENT_ID }}
+          GITHUB_CLIENT_SECRET: ${{ secrets.GITHUB_CLIENT_SECRET }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RESEND_FROM_EMAIL: ${{ secrets.RESEND_FROM_EMAIL }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          envs: APP_BASE_URL,APP_SECRET,SESSION_SECRET,DATABASE_URL,SUPABASE_URL,SUPABASE_KEY,GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,GITHUB_CLIENT_ID,GITHUB_CLIENT_SECRET,RESEND_API_KEY,RESEND_FROM_EMAIL
+          script: |
+            cd ~/saas-template
+            trap 'rm -f .env' EXIT
+            cat > .env << ENVEOF
+            APP_BASE_URL=$APP_BASE_URL
+            APP_SECRET=$APP_SECRET
+            SESSION_SECRET=$SESSION_SECRET
+            DATABASE_URL=$DATABASE_URL
+            SUPABASE_URL=$SUPABASE_URL
+            SUPABASE_KEY=$SUPABASE_KEY
+            GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
+            GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET
+            GITHUB_CLIENT_ID=$GITHUB_CLIENT_ID
+            GITHUB_CLIENT_SECRET=$GITHUB_CLIENT_SECRET
+            RESEND_API_KEY=$RESEND_API_KEY
+            RESEND_FROM_EMAIL=$RESEND_FROM_EMAIL
+            ENVEOF
+            docker compose -f docker-compose.prod.yml --env-file .env pull
+            docker compose -f docker-compose.prod.yml --env-file .env up -d --force-recreate
+            echo "Waiting for services..."
+            for i in 1 2 3 4 5 6 7 8 9 10; do
+              sleep 5
+              if docker compose -f docker-compose.prod.yml exec -T backend wget -q --spider http://localhost:8008/api/public/v1/health 2>/dev/null; then
+                echo "Health check passed"
+                break
+              fi
+              echo "Attempt $i..."
+            done
+            if ! docker compose -f docker-compose.prod.yml exec -T backend wget -q --spider http://localhost:8008/api/public/v1/health 2>/dev/null; then
+              echo "Health check failed after 50s"
+              docker compose -f docker-compose.prod.yml logs --tail=50
+              exit 1
+            fi
+            docker image prune -af

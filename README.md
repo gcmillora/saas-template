@@ -78,13 +78,37 @@ bun run build                           # Type check + build
 bunx orval                              # Regenerate API hooks
 ```
 
+## Deployment Workflow
+
+The `Deploy` GitHub Actions workflow builds backend and frontend Docker images, pushes them to GHCR, syncs production Compose/Nginx config to a VPS, restarts services, and verifies the public health endpoint.
+
+Required repository secrets:
+
+- `VPS_HOST` — SSH host for the deployment server
+- `VPS_USER` — SSH user with Docker permissions
+- `VPS_SSH_KEY` — private SSH key for deployment
+- `APP_BASE_URL` — public application URL
+- `APP_SECRET` — backend application secret
+- `SESSION_SECRET` — Gorilla session secret
+- `DATABASE_URL` — production PostgreSQL connection string
+- `SUPABASE_URL` — Supabase project URL
+- `SUPABASE_KEY` — Supabase service key
+- `GOOGLE_CLIENT_ID` — Google OAuth client ID, or an empty secret value if unused
+- `GOOGLE_CLIENT_SECRET` — Google OAuth client secret, or an empty secret value if unused
+- `GITHUB_CLIENT_ID` — GitHub OAuth client ID, or an empty secret value if unused
+- `GITHUB_CLIENT_SECRET` — GitHub OAuth client secret, or an empty secret value if unused
+- `RESEND_API_KEY` — Resend API key
+- `RESEND_FROM_EMAIL` — verified sender email
+
+The workflow expects production Compose files at `docker-compose.prod.yml` and `nginx/nginx.conf`.
+
 ## Make It Yours
 
 After cloning, update these to match your project:
 
 1. **Module name** — `backend/go.mod` (change `saas-template` to your project name, then update all Go imports)
 2. **App name** — `frontend/src/components/app-sidebar.tsx` and `frontend/index.html`
-3. **Docker images** — `docker-compose.prod.yml` (change `ghcr.io/your-org/saas-*`)
+3. **Docker images** — `docker-compose.prod.yml` (change `ghcr.io/your-org/saas-template-*`)
 4. **Container names** — `docker-compose.yml` (change `saas-backend`, `saas-frontend`, etc.)
 5. **Database name** — `docker-compose.yml` (change `POSTGRES_DB` and connection strings)
 6. **Environment** — `backend/.env.example` (update secrets, URLs, API keys)

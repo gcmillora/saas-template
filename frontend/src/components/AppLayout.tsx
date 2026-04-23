@@ -5,10 +5,13 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 export function AppLayout() {
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
+
   return (
-    <SidebarProvider defaultOpen={false}>
+    <SidebarProvider defaultOpen={isDesktop}>
       <AppSidebar />
       <SidebarInset>
         <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">

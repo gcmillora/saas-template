@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"log/slog"
 	"saas-template/config"
 	"saas-template/internal/app/app_service/audit"
 	"saas-template/internal/app/mutation"
@@ -56,8 +57,7 @@ func ResetPassword(
 	}
 
 	if err := mutation.InvalidateAllUserTokens(ctx, app.DB(), resetRecord.UserID); err != nil {
-		// Log but don't fail — password was already updated
-		_ = err
+		slog.ErrorContext(ctx, "failed to invalidate reset tokens", "error", err, "user_id", resetRecord.UserID)
 	}
 
 	audit.Log(ctx, app, "password_reset_complete", &resetRecord.UserID, nil, nil)

@@ -1,5 +1,6 @@
 import { useContext } from "react";
 import { Home, Settings, LogOut, ChevronsUpDown } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -26,11 +27,30 @@ import { usePostApiV1Signout } from "@/services/api/v1-public";
 import { AuthContext } from "@/contexts/authContext";
 import { queryClient } from "@/providers/QueryProvider";
 
+interface NavItem {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+  roles: string[];
+}
+
+const navItems: NavItem[] = [
+  { label: "Home", href: "/", icon: Home, roles: ["admin", "user"] },
+  {
+    label: "Settings",
+    href: "/settings",
+    icon: Settings,
+    roles: ["admin", "user"],
+  },
+];
+
 export function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const signout = usePostApiV1Signout();
   const { user } = useContext(AuthContext);
+  const userRole = user?.role ?? "user";
+  const visibleItems = navItems.filter((item) => item.roles.includes(userRole));
 
   const userInitials = user
     ? [user.firstName, user.lastName]
@@ -83,25 +103,19 @@ export function AppSidebar() {
         <SidebarGroup className="pt-0">
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={location.pathname === "/"}>
-                  <a href="/">
-                    <Home className="size-4" />
-                    <span>Home</span>
-                  </a>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={location.pathname === "/settings"}
-                >
-                  <a href="/settings">
-                    <Settings className="size-4" />
-                    <span>Settings</span>
-                  </a>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {visibleItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={location.pathname === item.href}
+                  >
+                    <a href={item.href}>
+                      <item.icon className="size-4" />
+                      <span>{item.label}</span>
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
