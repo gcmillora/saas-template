@@ -9,14 +9,14 @@ func Ptr[V any](v V) *V {
 
 // Wraps an error with a stack trace
 func WrapErr(err error) error {
-	return errors.Wrap(err,1)
+	return errors.Wrap(err, 1)
 }
 
 // Concatenates two slices into a new slice
 func Concat[T any](item []T, item2 []T) []T {
 	itemLength := len(item)
 
-	new := make([]T, itemLength, itemLength + len(item2))
+	new := make([]T, itemLength, itemLength+len(item2))
 
 	copy(new, item)
 	new = append(new, item2...)

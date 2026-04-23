@@ -11,5 +11,3 @@ func NewConsole(app *config.App) *Console {
 		app: app,
 	}
 }
-
-	

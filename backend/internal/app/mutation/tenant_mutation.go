@@ -1,9 +1,9 @@
 package mutation
 
 import (
+	"context"
 	"saas-template/generated/db/database/public/model"
 	"saas-template/generated/db/database/public/table"
-	"context"
 	"time"
 
 	"github.com/go-jet/jet/v2/qrm"

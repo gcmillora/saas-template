@@ -1,9 +1,9 @@
 package repository
 
 import (
+	"context"
 	"saas-template/generated/db/database/public/model"
 	"saas-template/generated/db/database/public/table"
-	"context"
 	"time"
 
 	pg "github.com/go-jet/jet/v2/postgres"

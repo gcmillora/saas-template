@@ -57,7 +57,14 @@ func ResetPassword(
 	}
 
 	if err := mutation.InvalidateAllUserTokens(ctx, app.DB(), resetRecord.UserID); err != nil {
-		slog.ErrorContext(ctx, "failed to invalidate reset tokens", "error", err, "user_id", resetRecord.UserID)
+		slog.ErrorContext(
+			ctx,
+			"failed to invalidate reset tokens",
+			"error",
+			err,
+			"user_id",
+			resetRecord.UserID,
+		)
 	}
 
 	audit.Log(ctx, app, "password_reset_complete", &resetRecord.UserID, nil, nil)

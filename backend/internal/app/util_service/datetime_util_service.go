@@ -9,4 +9,3 @@ func FormatDateTime(
 
 	return date.Format(format)
 }
-

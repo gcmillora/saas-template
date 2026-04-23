@@ -1,9 +1,9 @@
 package repository
 
 import (
+	"context"
 	"saas-template/generated/db/database/public/model"
 	"saas-template/generated/db/database/public/table"
-	"context"
 
 	pg "github.com/go-jet/jet/v2/postgres"
 	"github.com/go-jet/jet/v2/qrm"
@@ -84,4 +84,3 @@ func GetUsers(
 
 	return &rows, nil
 }
-

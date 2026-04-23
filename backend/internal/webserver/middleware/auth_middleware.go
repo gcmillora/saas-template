@@ -1,9 +1,9 @@
 package middleware
 
 import (
-	"saas-template/config"
 	"context"
 	"net/http"
+	"saas-template/config"
 )
 
 const userIDKey contextKey = "user_id"

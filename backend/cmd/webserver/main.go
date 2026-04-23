@@ -1,9 +1,9 @@
 package main
 
 import (
+	"os"
 	"saas-template/config"
 	"saas-template/internal/webserver"
-	"os"
 )
 
 func main() {
